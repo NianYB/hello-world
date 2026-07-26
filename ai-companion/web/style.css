@@ -1,0 +1,164 @@
+:root {
+  --bg: #15111a;
+  --panel: #1e1826;
+  --line: #322838;
+  --text: #ece6ef;
+  --muted: #9b8ea6;
+  --accent: #ec76a5;
+  --error: #ff8a8a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.6 system-ui, "Noto Sans TC", sans-serif;
+}
+
+main {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 32px 20px;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+}
+
+@media (max-width: 760px) {
+  main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.stage {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+#avatar {
+  width: 100%;
+  aspect-ratio: 1;
+  display: block;
+}
+
+.placeholder-note {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.placeholder-note code {
+  color: var(--accent);
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panel h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.state {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.state[data-tone="ok"] {
+  color: var(--accent);
+}
+
+.state[data-tone="error"] {
+  color: var(--error);
+}
+
+.log {
+  min-height: 240px;
+  max-height: 46vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.line {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  max-width: 90%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.line.user {
+  align-self: flex-end;
+  background: #33283b;
+}
+
+.line.assistant {
+  align-self: flex-start;
+  background: #3a2434;
+}
+
+.line.error {
+  align-self: stretch;
+  background: #3a2020;
+  color: var(--error);
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+button {
+  flex: 1 1 auto;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #2a2231;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #1b1017;
+  font-weight: 600;
+}
+
+button[data-on="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}

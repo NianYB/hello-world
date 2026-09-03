@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Companion</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><circle cx='8' cy='8' r='7' fill='%23ec76a5'/></svg>" />
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <main>
+      <div class="stage">
+        <canvas id="avatar"></canvas>
+        <p class="placeholder-note">
+          佔位動畫 — 對嘴影像階段會用 <code>&lt;video&gt;</code> 取代這塊
+        </p>
+      </div>
+
+      <section class="panel">
+        <header>
+          <h1>小語</h1>
+          <p id="state" class="state">尚未連線</p>
+        </header>
+
+        <div id="log" class="log" aria-live="polite"></div>
+
+        <div class="controls">
+          <button id="start" class="primary">開始對話</button>
+          <button id="mute" disabled data-on="false">靜音</button>
+          <button id="stop" disabled>結束</button>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/static/app.js"></script>
+  </body>
+</html>

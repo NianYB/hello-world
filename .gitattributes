@@ -1,0 +1,9 @@
+# 統一以 LF 儲存文字檔，checkout 時交由各平台處理
+* text=auto eol=lf
+
+# 二進位檔不做換行符轉換
+*.png binary
+*.jpg binary
+*.gif binary
+*.pdf binary
+*.zip binary

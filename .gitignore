@@ -1,0 +1,33 @@
+# 作業系統
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+Desktop.ini
+
+# 編輯器 / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 日誌與暫存
+*.log
+*.tmp
+tmp/
+temp/
+
+# 相依套件與建置產物
+node_modules/
+dist/
+build/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 環境變數（不要把密鑰推上 GitHub）
+.env
+.env.local
+*.pem

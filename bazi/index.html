@@ -481,6 +481,7 @@
       <button type="submit">排盤</button>
       <button type="button" class="ghost" id="saveBtn">儲存命盤</button>
       <button type="button" class="ghost" id="pdfBtn">匯出 PDF</button>
+      <button type="button" class="ghost" id="cardBtn">分享圖卡</button>
     </div>
     <p class="error" id="err" hidden></p>
     <p class="status" id="status" role="status"></p>
@@ -538,7 +539,7 @@
     <p>大運採陽男陰女順行、陰男陽女逆行，以出生到前後一節的天數「三天折一年」推算起運歲數。歲數為實歲。</p>
     <p>日主強弱以加權計分估算：月令地支權重 3，其他地支 1.2（藏干依本氣、中氣、餘氣分配），天干各 1；生扶日主的五行（印、比劫）占比 60% 以上為身強，50–60% 偏強，40–50% 偏弱，40% 以下身弱。喜用神一般採扶抑法；若日主極旺（生扶力量 80% 以上且官殺無力）判為從強格，若日主極弱（20% 以下、地支無根、天干無印比）判為從財、從殺或從兒格，喜忌改為順從旺勢。格局以月令取用：月令為日主之祿或羊刃為建祿格、月刃格，其餘取月令藏干中透出天干者（比劫不取），未透則取本氣。化氣格等更特殊的格局未處理。</p>
     <p>神煞只列常見幾種：天乙貴人、文昌、祿神、羊刃看日干；桃花、驛馬、華蓋、將星看年支與日支；紅鸞、天喜看年支；空亡以日柱所在旬推算。</p>
-    <p>「儲存命盤」會把輸入資料存到你的 claude.ai 帳號，只有你自己看得到；無法使用帳號儲存時，改存在目前的瀏覽器。「匯出 PDF」會把目前的命盤與分析轉成 A4 PDF 檔。</p>
+    <p>「儲存命盤」會把輸入資料存到你的 claude.ai 帳號，只有你自己看得到；無法使用帳號儲存時，改存在目前的瀏覽器。「匯出 PDF」會把目前的命盤與分析轉成 A4 PDF 檔；「分享圖卡」會產生一張 1080×1350 的命盤總覽圖片，方便傳到 LINE 或社群。</p>
     <p>結果中加上虛線底線的名詞可以點選，會顯示白話解釋。</p>
     <p>分析文字為傳統命理的通用說法，只是規則推算，並非對個人的判斷，結果僅供參考與娛樂。</p>
   </details>
@@ -1523,6 +1524,103 @@
     });
   }
   $('pdfBtn').addEventListener('click', exportPdf);
+
+  // ---------- 分享圖卡（1080×1350 PNG）----------
+  var CARD_EL = { '木': '#2f7d4a', '火': '#c2412f', '土': '#9a6b1f', '金': '#6f7680', '水': '#245a8c' };
+  function wrapText(ctx, text, x, y, maxW, lh, maxLines) {
+    var line = '', lines = [];
+    var noStart = '、，。；：！？）」』／…';
+    for (var i = 0; i < text.length; i++) {
+      var t = line + text[i];
+      // 標點不放行首：寧可讓它略超出一點
+      if (ctx.measureText(t).width > maxW && line && noStart.indexOf(text[i]) < 0) { lines.push(line); line = text[i]; } else line = t;
+    }
+    if (line) lines.push(line);
+    if (maxLines && lines.length > maxLines) { lines = lines.slice(0, maxLines); lines[maxLines - 1] = lines[maxLines - 1].slice(0, -1) + '…'; }
+    lines.forEach(function (l, i) { ctx.fillText(l, x, y + i * lh); });
+    return y + lines.length * lh;
+  }
+  function drawCard() {
+    var r = lastResult, A = lastAnalysis, P = r.pillars, PF = A.profile;
+    var W = 1080, H = 1350, pad = 84;
+    var cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    var c = cv.getContext('2d');
+    var serif = '"Noto Serif TC", "Songti TC", serif', sans = '"Noto Sans TC", "PingFang TC", sans-serif';
+    c.fillStyle = '#f2f4f0'; c.fillRect(0, 0, W, H);
+    c.fillStyle = '#fbfcfa'; c.fillRect(40, 40, W - 80, H - 80);
+    c.strokeStyle = '#d5dbd5'; c.lineWidth = 2; c.strokeRect(40, 40, W - 80, H - 80);
+    // 印章
+    c.fillStyle = '#b3342b'; c.fillRect(pad, pad, 104, 104);
+    c.fillStyle = '#fff'; c.font = '900 40px ' + serif; c.textAlign = 'center'; c.textBaseline = 'middle';
+    [['八', 0, 0], ['字', 1, 0], ['命', 0, 1], ['盤', 1, 1]].forEach(function (g) { c.fillText(g[0], pad + 28 + g[1] * 48, pad + 28 + g[2] * 48); });
+    c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+    var nm = $('name').value.trim();
+    c.fillStyle = '#1c2320'; c.font = '700 54px ' + serif;
+    c.fillText(nm || '我的八字命盤', pad + 132, pad + 58);
+    c.fillStyle = '#5d6862'; c.font = '28px ' + sans;
+    c.fillText('國曆 ' + fmt(r.input).slice(0, 10) + (r.unknownHour ? '・時辰不詳' : ' ' + fmt(r.input).slice(11)) + '・' + (r.input.gender === 'male' ? '男' : '女') + '命・屬' + r.zodiac, pad + 132, pad + 100);
+    // 四柱
+    var colW = (W - pad * 2) / 4, top = 262;
+    c.strokeStyle = '#d5dbd5'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(pad, top - 40); c.lineTo(W - pad, top - 40); c.stroke();
+    ['year', 'month', 'day', 'hour'].forEach(function (k, i) {
+      var cx = pad + colW * i + colW / 2, p = P[k];
+      if (k === 'day') { c.fillStyle = 'rgba(179,52,43,.07)'; c.fillRect(pad + colW * i + 6, top - 30, colW - 12, 350); }
+      c.textAlign = 'center';
+      c.fillStyle = '#5d6862'; c.font = '26px ' + sans; c.fillText(HEADS[i], cx, top + 10);
+      c.fillStyle = k === 'day' ? '#b3342b' : '#1c2320'; c.font = '600 26px ' + sans; c.fillText(p ? p.tenGod : '', cx, top + 50);
+      c.font = '900 118px ' + serif;
+      c.fillStyle = p ? CARD_EL[p.stemElement] : '#d5dbd5'; c.fillText(p ? p.stem : '？', cx, top + 170);
+      c.fillStyle = p ? CARD_EL[p.branchElement] : '#d5dbd5'; c.fillText(p ? p.branch : '？', cx, top + 305);
+    });
+    c.textAlign = 'left';
+    var y = top + 372;
+    c.beginPath(); c.moveTo(pad, y - 20); c.lineTo(W - pad, y - 20); c.stroke();
+    // 命盤總覽
+    c.fillStyle = '#b3342b'; c.font = '700 24px ' + sans; c.fillText('命 盤 總 覽', pad, y + 18);
+    c.fillStyle = '#1c2320'; c.font = '900 64px ' + serif; c.fillText(PF.title, pad, y + 94);
+    c.fillStyle = '#5d6862'; c.font = '28px ' + sans; c.fillText(PF.headline, pad, y + 140);
+    c.fillStyle = '#1c2320'; c.font = '31px ' + sans;
+    y = wrapText(c, A.dayMasterNote + PF.strengths.join('、') + '。', pad, y + 200, W - pad * 2, 48, 3);
+    // 喜用
+    y += 30;
+    c.fillStyle = '#5d6862'; c.font = '26px ' + sans; c.fillText('喜用五行', pad, y);
+    A.strength.favorable.forEach(function (e, i) {
+      var x = pad + 170 + i * 84;
+      c.beginPath(); c.arc(x, y - 9, 32, 0, Math.PI * 2); c.strokeStyle = CARD_EL[e]; c.lineWidth = 3; c.stroke();
+      c.fillStyle = CARD_EL[e]; c.font = '700 34px ' + serif; c.textAlign = 'center'; c.fillText(e, x, y + 3); c.textAlign = 'left';
+    });
+    c.fillStyle = '#5d6862'; c.font = '26px ' + sans; c.fillText(A.strength.pattern.name + '・' + A.strength.level, pad + 170 + A.strength.favorable.length * 84 + 20, y);
+    // 適合方向
+    y += 72;
+    c.fillStyle = '#5d6862'; c.font = '26px ' + sans; c.fillText('適合方向', pad, y);
+    c.fillStyle = '#1c2320'; c.font = '30px ' + sans;
+    y = wrapText(c, PF.careers.slice(0, 3).map(function (x) { return x.jobs.split('、').slice(0, 3).join('、'); }).join('／'), pad + 170, y, W - pad * 2 - 170, 44, 2);
+    // 今年重點
+    var Y0 = A.annual[0];
+    if (Y0) {
+      y += 22;
+      c.fillStyle = '#5d6862'; c.font = '26px ' + sans; c.fillText(Y0.year + ' 年', pad, y);
+      c.fillStyle = '#1c2320'; c.font = '700 30px ' + sans; c.fillText(Y0.name + '・' + Y0.detail.outlook, pad + 170, y);
+      c.fillStyle = '#1c2320'; c.font = '28px ' + sans;
+      wrapText(c, Y0.detail.mindset, pad + 170, y + 44, W - pad * 2 - 170, 40, 2);
+    }
+    // 頁尾
+    c.fillStyle = '#5d6862'; c.font = '22px ' + sans;
+    c.fillText('四柱八字排盤・依傳統命理規則推算，僅供參考', pad, H - 62);
+    return new Promise(function (res) { cv.toBlob(res, 'image/png'); });
+  }
+  $('cardBtn').addEventListener('click', function () {
+    run();
+    if (!lastOk) { status('排盤失敗，請先修正輸入再產生圖卡。', 'bad'); return; }
+    var btn = $('cardBtn'); btn.disabled = true; status('正在產生圖卡…');
+    Promise.resolve(document.fonts && document.fonts.ready).then(drawCard).then(function (blob) {
+      var nm = $('name').value.trim().replace(/[\\/:*?"<>|]/g, '') || '八字命盤';
+      return deliver(blob, nm + '-命盤圖卡.png');
+    }).then(function (msg) { status(msg || '已取消下載。', msg ? 'ok' : ''); }, function (e) {
+      status('圖卡產生失敗：' + (e && e.message ? e.message : '請稍後再試。'), 'bad');
+    }).then(function () { btn.disabled = false; });
+  });
 
   run();
   renderSaved();

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 'use strict';
-// 用法：node cli.js 1990-05-15 14:30 [--gender male|female] [--tz 8] [--lng 121.5] [--zi-same-day]
+// 用法：node cli.js 1990-05-15 14:30 [--gender male|female] [--tz 8] [--lng 121.5] [--zi-same-day] [--detail]
 const Bazi = require('./analysis.js');
 
 function usage() {
-  console.log('用法：node cli.js YYYY-MM-DD HH:MM [--gender male|female] [--tz 時區] [--lng 經度] [--zi-same-day]');
+  console.log('用法：node cli.js YYYY-MM-DD HH:MM [--gender male|female] [--tz 時區] [--lng 經度] [--zi-same-day] [--detail]');
   console.log('範例：node cli.js 1990-05-15 14:30 --gender female --lng 121.5');
   process.exit(1);
 }
@@ -13,6 +13,7 @@ const args = process.argv.slice(2);
 if (args.length < 2) usage();
 const [y, mo, d] = args[0].split('-').map(Number);
 const [h, mi] = args[1].split(':').map(Number);
+let showDetail = false;
 const opt = { year: y, month: mo, day: d, hour: h, minute: mi || 0 };
 for (let i = 2; i < args.length; i++) {
   const a = args[i];
@@ -20,6 +21,7 @@ for (let i = 2; i < args.length; i++) {
   else if (a === '--tz') opt.timezone = Number(args[++i]);
   else if (a === '--lng') opt.longitude = Number(args[++i]);
   else if (a === '--zi-same-day') opt.lateZiNextDay = false;
+  else if (a === '--detail') showDetail = true;
   else usage();
 }
 
@@ -77,5 +79,9 @@ console.log('\n流年：');
 a.annual.forEach((y) => {
   const extra = [y.taiSui, ...y.relations.map((x) => x.who.filter((w) => w !== '流年').join('') + x.text)].filter(Boolean);
   console.log(`${y.year} ${y.name}（${y.stemTenGod}／${y.branchTenGod}）${y.luck ? '運' + y.luck : ''}${extra.length ? '：' + extra.join('、') : ''}`);
+  if (showDetail) {
+    console.log(`  [${y.detail.outlook}] ${y.detail.summary}`);
+    y.detail.items.forEach((it) => console.log(`  - ${it.tag}：${it.text}`));
+  }
 });
 console.log();

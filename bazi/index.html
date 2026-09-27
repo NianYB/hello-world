@@ -173,7 +173,19 @@
   .gods span { font-size: 12px; color: var(--muted); }
 
   .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
-  table.annual { border-collapse: collapse; width: 100%; font-size: 13px; min-width: 560px; }
+  .table-wrap { container-type: inline-size; }
+  table.annual { border-collapse: collapse; width: 100%; font-size: 13px; }
+  table.annual th:nth-child(5) { width: 24%; }
+  table.annual th:nth-child(6) { width: 40%; }
+  .detail { display: grid; gap: 6px; line-height: 1.65; }
+  .detail p { margin: 0; }
+  .detail ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+  .detail li { padding-left: 10px; border-left: 3px solid var(--line); }
+  .detail li b { display: block; font-weight: 700; font-size: 12px; }
+  .detail li.tone-good { border-left-color: var(--wood); } .detail li.tone-good b { color: var(--wood); }
+  .detail li.tone-bad { border-left-color: var(--fire); } .detail li.tone-bad b { color: var(--fire); }
+  .outlook { display: inline-block; font-size: 12px; font-weight: 700; padding: 0 7px; margin-right: 6px; border-radius: 4px; color: var(--seal-ink); background: var(--metal); }
+  .outlook.o-較順 { background: var(--wood); } .outlook.o-起伏較大 { background: var(--fire); }
   table.annual th, table.annual td { padding: 8px 10px; border-top: 1px solid var(--line); text-align: left; vertical-align: top; }
   table.annual thead th { border-top: 0; font-weight: 500; color: var(--muted); font-size: 12px; letter-spacing: .08em; }
   table.annual td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -183,6 +195,22 @@
   .tags span { font-size: 12px; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--line); white-space: nowrap; }
   .tags span.t-沖, .tags span.t-太歲 { border-color: var(--fire); color: var(--fire); }
   .tags span.t-合 { border-color: var(--wood); color: var(--wood); }
+  /* 窄版：每一年改成一張卡片 */
+  @container (max-width: 720px) {
+    table.annual thead { display: none; }
+    table.annual, table.annual tbody, table.annual tr, table.annual td { display: block; width: auto; }
+    table.annual tr { border-top: 1px solid var(--line); padding: 10px 12px; display: grid; grid-template-columns: auto auto 1fr; gap: 4px 14px; align-items: baseline; }
+    table.annual tbody tr:first-child { border-top: 0; }
+    table.annual td { border: 0; padding: 0; }
+    table.annual td[data-label="十神"]::before, table.annual td[data-label="大運"]::before { content: attr(data-label) " "; color: var(--muted); font-size: 12px; }
+    table.annual td[data-label="十神"] { grid-column: 1 / -1; }
+    table.annual td[data-label="大運"] { grid-column: 1 / -1; }
+    table.annual td[data-label="互動"], table.annual td.detail-cell { grid-column: 1 / -1; padding-top: 6px; }
+    table.annual td.num br { display: none; }
+    table.annual td.num .none { margin-left: 6px; }
+    table.annual tr.now { background: var(--seal-soft); }
+    table.annual tr.now td { background: none; }
+  }
 
   .actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px; }
   .actions button { flex: 1 1 120px; }
@@ -225,7 +253,19 @@
   .pdf-sheet .glyph { font-size: 52px; }
   .pdf-sheet .luck-wrap, .pdf-sheet .table-wrap { overflow: visible; }
   .pdf-sheet .luck > div.now { box-shadow: none; border-width: 2px; }
-  .pdf-sheet table.annual td:not(:last-child), .pdf-sheet table.annual th { white-space: nowrap; }
+  .pdf-sheet table.annual td:nth-child(-n+4), .pdf-sheet table.annual th { white-space: nowrap; }
+  .pdf-sheet table.annual { table-layout: fixed; }
+  .pdf-sheet table.annual th { width: auto; }
+  .pdf-sheet .tags span { white-space: normal; }
+  .pdf-sheet > .pdf-block { margin-top: 0; }
+  .pdf-sheet .pdf-block h2 { margin-top: 24px; }
+  .pdf-sheet .pdf-row { border-radius: 0; border-top: 0; }
+  .pdf-sheet .pdf-row.first { border-top: 1px solid var(--line); border-radius: 10px 10px 0 0; }
+  .pdf-sheet .pdf-row.last { border-radius: 0 0 10px 10px; }
+  .pdf-sheet .pdf-row.first.last { border-radius: 10px; }
+  .pdf-sheet .pdf-row tbody tr td { border-top: 0; }
+  .pdf-sheet .pdf-row.first tbody tr td { border-top: 1px solid var(--line); }
+  .pdf-sheet .pdf-block .legend { margin: 6px 0 0; }
   .pdf-sheet .pdf-foot { font-size: 12px; color: var(--muted); margin: 0; }
 
   @media (max-width: 480px) {
@@ -422,7 +462,7 @@
     // 流年
     var cy = new Date().getFullYear();
     h += '<div style="margin-top:28px"><h2>流年（' + A.annual[0].year + '–' + A.annual[A.annual.length - 1].year + '）</h2><div class="table-wrap"><table class="annual"><thead><tr>' +
-      '<th>年份</th><th>干支</th><th>十神（干／支）</th><th>大運</th><th>與命盤的互動</th></tr></thead><tbody>';
+      '<th>年份</th><th>干支</th><th>十神（干／支）</th><th>大運</th><th>與命盤的互動</th><th>詳細說明</th></tr></thead><tbody>';
     A.annual.forEach(function (y) {
       var tags = [];
       if (y.taiSui) tags.push('<span class="t-太歲">' + y.taiSui + '</span>');
@@ -430,12 +470,18 @@
         var other = x.who.filter(function (w) { return w !== '流年'; }).join('');
         tags.push('<span class="t-' + x.kind + '">' + other + (other === '大運' ? '' : '柱') + '・' + x.text + '</span>');
       });
-      h += '<tr' + (y.year === cy ? ' class="now"' : '') + '><td class="num">' + y.year + '<br><span class="none">' + y.age + ' 歲</span></td>' +
-        '<td class="gz"><span class="e-' + y.stemElement + '">' + y.name[0] + '</span><span class="e-' + y.branchElement + '">' + y.name[1] + '</span></td>' +
-        '<td>' + y.stemTenGod + '／' + y.branchTenGod + '</td><td>' + (y.luck || '<span class="none">未起運</span>') + '</td>' +
-        '<td>' + (tags.length ? '<div class="tags">' + tags.join('') + '</div>' : '<span class="none">—</span>') + '</td></tr>';
+      var D = y.detail;
+      var detail = '<div class="detail"><p><span class="outlook o-' + D.outlook + '">' + D.outlook + '</span>' + D.summary + '</p>' +
+        (D.items.length ? '<ul>' + D.items.map(function (it) {
+          return '<li class="tone-' + it.tone + '"><b>' + it.tag + '</b>' + it.text + '</li>';
+        }).join('') + '</ul>' : '') + '</div>';
+      h += '<tr' + (y.year === cy ? ' class="now"' : '') + '><td class="num" data-label="年份">' + y.year + '<br><span class="none">' + y.age + ' 歲</span></td>' +
+        '<td class="gz" data-label="干支"><span class="e-' + y.stemElement + '">' + y.name[0] + '</span><span class="e-' + y.branchElement + '">' + y.name[1] + '</span></td>' +
+        '<td data-label="十神">' + y.stemTenGod + '／' + y.branchTenGod + '</td><td data-label="大運">' + (y.luck || '<span class="none">未起運</span>') + '</td>' +
+        '<td data-label="互動">' + (tags.length ? '<div class="tags">' + tags.join('') + '</div>' : '<span class="none">—</span>') + '</td>' +
+        '<td class="detail-cell" data-label="詳細說明">' + detail + '</td></tr>';
     });
-    h += '</tbody></table></div><p class="legend">歲數為實歲。十神以日主為準：前者看流年天干，後者看地支本氣。</p></div>';
+    h += '</tbody></table></div><p class="legend">歲數為實歲。十神以日主為準：前者看流年天干，後者看地支本氣。「較順／平穩／起伏較大」依流年五行喜忌與沖合刑害加減計分，只是粗略參考。</p></div>';
     $('out').innerHTML = h;
   }
 
@@ -652,6 +698,38 @@
     });
   }
 
+  // 流年表每一年拆成獨立區塊，PDF 換頁時才不會把整張表縮小塞進一頁。
+  // 標題跟第一年、註解跟最後一年放在同一塊，避免單獨落在頁尾或頁首。
+  var PDF_COLS = [64, 56, 96, 48, 190, null];
+  function splitAnnualForPdf(sheet) {
+    var table = sheet.querySelector('table.annual');
+    if (!table) return;
+    var section = table.closest('.table-wrap').parentNode;
+    var title = section.querySelector('h2'), legend = section.querySelector('.legend');
+    var rows = Array.prototype.slice.call(table.tBodies[0].rows);
+    rows.forEach(function (tr, i) {
+      var block = document.createElement('div');
+      block.className = 'pdf-block' + (i === rows.length - 1 ? ' last' : '');
+      if (i === 0 && title) block.appendChild(title);
+      var wrap = document.createElement('div');
+      wrap.className = 'table-wrap pdf-row' + (i === 0 ? ' first' : '') + (i === rows.length - 1 ? ' last' : '');
+      var t = document.createElement('table');
+      t.className = 'annual';
+      var cg = document.createElement('colgroup');
+      PDF_COLS.forEach(function (w) { var c = document.createElement('col'); if (w) c.style.width = w + 'px'; cg.appendChild(c); });
+      t.appendChild(cg);
+      if (i === 0) t.appendChild(table.tHead.cloneNode(true));
+      var tb = document.createElement('tbody');
+      tb.appendChild(tr);
+      t.appendChild(tb);
+      wrap.appendChild(t);
+      block.appendChild(wrap);
+      if (i === rows.length - 1 && legend) block.appendChild(legend);
+      sheet.insertBefore(block, section);
+    });
+    section.remove();
+  }
+
   function exportPdf() {
     run();
     if (!lastOk) { status('排盤失敗，請先修正輸入再匯出。', 'bad'); return; }
@@ -671,6 +749,7 @@
       foot.textContent = '以四柱八字排盤產生於 ' + new Date().toLocaleDateString('zh-TW') + '。分析為傳統命理規則推算，僅供參考。';
       sheet.appendChild(foot);
       document.body.appendChild(sheet);
+      splitAnnualForPdf(sheet);
 
       var jsPDF = window.jspdf.jsPDF;
       var pdf = new jsPDF({ unit: 'pt', format: 'a4' });
@@ -687,7 +766,8 @@
               pdf.addPage(); y = m;
             }
             pdf.addImage(cv.toDataURL('image/jpeg', 0.92), 'JPEG', m, y, w, h);
-            y += h + 14;
+            // 流年各年區塊緊接著排，其餘區塊之間留 14pt
+            y += h + (el.classList.contains('pdf-block') && !el.classList.contains('last') ? 0 : 14);
           });
         });
       }, Promise.resolve()).then(function () { return pdf.output('blob'); });

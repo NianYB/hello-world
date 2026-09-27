@@ -68,3 +68,20 @@ test('流年', () => {
   assert.strictEqual(a.annual[0].luck, '丁丑');
   assert.strictEqual(a.annual[1].name, '丁未');
 });
+
+test('流年詳細說明', () => {
+  const a = Bazi.analyze(sample(), { currentYear: 2026 });
+  const y = a.annual[0]; // 丙午
+  assert.ok(['較順', '平穩', '起伏較大'].includes(y.detail.outlook));
+  assert.match(y.detail.summary, /七殺年/);
+  // 每個互動都有一則說明，另加值太歲
+  assert.strictEqual(y.detail.items.length, y.relations.length + 1);
+  assert.strictEqual(y.detail.items[0].tag, '值太歲');
+  const he = y.detail.items.find((i) => i.tag === '月干・辛丙合化水');
+  assert.ok(he && he.tone === 'good' && /合出的水是喜用/.test(he.text));
+  const chong = a.annual[1].detail.items.find((i) => i.tag === '時干・癸丁相沖');
+  assert.ok(chong && chong.tone === 'bad' && /子女/.test(chong.text));
+  // 日支逢沖提到感情
+  const y2030 = a.annual.find((x) => x.year === 2030);
+  assert.ok(y2030.detail.items.some((i) => i.tag === '日支・辰戌相沖' && /感情/.test(i.text)));
+});

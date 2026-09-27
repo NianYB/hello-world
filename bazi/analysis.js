@@ -51,20 +51,20 @@
       for (var j = i + 1; j < items.length; j++) {
         var a = items[i], b = items[j], who = [a.label, b.label];
         var ks = key(a.stem, b.stem), kb = key(a.branch, b.branch);
-        if (STEM_HE[ks]) out.push({ kind: '合', type: '天干五合', text: S[a.stem] + S[b.stem] + '合化' + STEM_HE[ks], who: who });
+        if (STEM_HE[ks]) out.push({ kind: '合', type: '天干五合', text: S[a.stem] + S[b.stem] + '合化' + STEM_HE[ks], who: who, element: STEM_HE[ks] });
         if (Math.abs(a.stem - b.stem) === 6) { // 甲庚、乙辛、丙壬、丁癸
           out.push({ kind: '沖', type: '天干相沖', text: S[a.stem] + S[b.stem] + '相沖', who: who });
         }
-        if (BRANCH_LIUHE[kb]) out.push({ kind: '合', type: '地支六合', text: B[a.branch] + B[b.branch] + '合' + BRANCH_LIUHE[kb], who: who });
+        if (BRANCH_LIUHE[kb]) out.push({ kind: '合', type: '地支六合', text: B[a.branch] + B[b.branch] + '合' + BRANCH_LIUHE[kb], who: who, element: BRANCH_LIUHE[kb] });
         if (Math.abs(a.branch - b.branch) === 6) out.push({ kind: '沖', type: '地支六沖', text: B[a.branch] + B[b.branch] + '相沖', who: who });
-        if (XING_PAIRS[kb]) out.push({ kind: '刑', type: '地支相刑', text: B[a.branch] + B[b.branch] + '相刑（' + XING_PAIRS[kb] + '）', who: who });
+        if (XING_PAIRS[kb]) out.push({ kind: '刑', type: '地支相刑', text: B[a.branch] + B[b.branch] + '相刑（' + XING_PAIRS[kb] + '）', who: who, sub: XING_PAIRS[kb] });
         if (a.branch === b.branch && ZIXING.indexOf(a.branch) >= 0) out.push({ kind: '刑', type: '地支自刑', text: B[a.branch] + B[b.branch] + '自刑', who: who });
         if (HAI.indexOf(kb) >= 0) out.push({ kind: '害', type: '地支六害', text: B[a.branch] + B[b.branch] + '相害', who: who });
         if (PO.indexOf(kb) >= 0) out.push({ kind: '破', type: '地支相破', text: B[a.branch] + B[b.branch] + '相破', who: who });
         SANHE.forEach(function (g) {
           var hasWang = a.branch === g[1] || b.branch === g[1];
           if (a.branch !== b.branch && hasWang && [g[0], g[1], g[2]].indexOf(a.branch) >= 0 && [g[0], g[1], g[2]].indexOf(b.branch) >= 0) {
-            out.push({ kind: '合', type: '地支半合', text: B[a.branch] + B[b.branch] + '半合' + g[3] + '局', who: who });
+            out.push({ kind: '合', type: '地支半合', text: B[a.branch] + B[b.branch] + '半合' + g[3] + '局', who: who, element: g[3] });
           }
         });
       }
@@ -269,11 +269,121 @@
     '癸水如雨露細流，溫柔內秀、想像豐富，善於感受。'
   ];
 
+  // ---------- 流年詳解 ----------
+  var PALACE = {
+    '年': { stem: '年干代表祖上與長輩', branch: '年支是祖業與家族根基，也代表早年環境', short: '長輩、家族' },
+    '月': { stem: '月干代表父母、兄弟與工作上的助力', branch: '月支是月令，代表父母兄弟與事業舞台、工作環境', short: '事業環境、父母兄弟' },
+    '日': { stem: '日干就是命主自己', branch: '日支是夫妻宮，關係到配偶、感情與自身身心', short: '自己、配偶' },
+    '時': { stem: '時干代表子女、晚輩與部屬', branch: '時支代表子女、計畫成果與晚年', short: '子女、晚輩、計畫' },
+    '大運': { stem: '大運天干主這十年前五年的外在運勢', branch: '大運地支主這十年後五年的根基運勢', short: '這十年的整體運勢' }
+  };
+  var KIND_TEXT = {
+    '合': '合代表牽絆、吸引與合作',
+    '沖': '沖代表變動、衝突與分離，事情容易被推動或打破',
+    '刑': '刑代表摩擦、是非與內耗',
+    '害': '害代表暗中耗損，易有誤會或小人',
+    '破': '破代表事情不圓滿、計畫受阻，力量比沖輕'
+  };
+  var XING_TEXT = {
+    '無恩之刑': '無恩之刑主人情糾葛、好心未必有好報',
+    '恃勢之刑': '恃勢之刑主固執逞強、以勢壓人而招怨',
+    '無禮之刑': '無禮之刑主禮節失序，易在親密關係中起口角'
+  };
+  // 各宮位逢沖、刑的具體提醒
+  var CHONG_FOCUS = {
+    '年': '留意家中長輩的健康，或居住、家庭環境的變動',
+    '月': '工作、職務或所處環境容易變動，可能換部門、換工作或搬遷',
+    '日': '感情、婚姻關係起伏較大，也要注意身體與作息',
+    '時': '子女、晚輩或手上的計畫容易有變化',
+    '大運': '與這步大運相衝，運勢轉折感較強，宜穩中求變'
+  };
+  var HE_FOCUS = {
+    '年': '易得長輩照顧，或與家族事務牽連',
+    '月': '工作上有合作機會或貴人牽線，也可能被瑣事牽絆',
+    '日': '感情有進展或結緣的機會，已婚者重心放在家庭',
+    '時': '與子女、晚輩互動增加，計畫容易談成',
+    '大運': '流年與大運相合，這一年與十年運勢同步，喜忌作用都較明顯'
+  };
+  var YEAR_THEME = {
+    '比肩': '比肩年，自主意識強，同輩、朋友往來多，宜合作，也要防競爭分財',
+    '劫財': '劫財年，衝勁與競爭並存，財務容易被分走，合夥與借貸要謹慎',
+    '食神': '食神年，心情較放鬆，利於發揮才藝、享受生活與進修表達',
+    '傷官': '傷官年，創意與表現欲強，敢於突破，但言語容易得罪人',
+    '偏財': '偏財年，機會與人脈活絡，利業務、投資與交際，花費也較多',
+    '正財': '正財年，重視收入與實際成果，適合按部就班累積',
+    '七殺': '七殺年，壓力與挑戰增加，也是爭取表現、突破的時機',
+    '正官': '正官年，重責任與名聲，利升遷、考核與建立制度',
+    '偏印': '偏印年，思考深、直覺強，利研究與專業技能，情緒易內斂',
+    '正印': '正印年，易得長輩、上司支持，利學習、證照與休養'
+  };
+
+  function favorLabel(element, st) {
+    var els = element.split('');
+    var fav = els.filter(function (e) { return st.favorable.indexOf(e) >= 0; }).length;
+    if (fav === els.length) return '喜';
+    if (fav === 0) return '忌';
+    return '半';
+  }
+
+  function explainRelation(x, st) {
+    var other = x.who.filter(function (w) { return w !== '流年'; })[0];
+    var isStem = x.type.indexOf('天干') === 0;
+    var palace = PALACE[other];
+    var where = other === '大運' ? '大運' : other + (isStem ? '干' : '支');
+    var parts = [(isStem ? palace.stem : palace.branch) + '。'];
+    var tone = 'neutral';
+    if (x.kind === '合') {
+      parts.push(KIND_TEXT['合'] + '，' + HE_FOCUS[other] + '。');
+      if (x.element) {
+        var f = favorLabel(x.element, st);
+        if (f === '喜') { parts.push('合出的' + x.element + '是喜用，這個合多半是助力。'); tone = 'good'; }
+        else if (f === '忌') { parts.push('合出的' + x.element + '是忌神，合而生累，要防被人情或利益綁住。'); tone = 'bad'; }
+        else parts.push('合出的' + x.element + '喜忌參半，好壞看實際情況。');
+      }
+    } else if (x.kind === '沖') {
+      parts.push(KIND_TEXT['沖'] + '。');
+      if (isStem && other === '日') parts.push('流年天干沖剋日主，壓力與意見衝突較多，行事宜保守。');
+      else parts.push(CHONG_FOCUS[other] + '。');
+      tone = 'bad';
+    } else if (x.kind === '刑') {
+      parts.push(KIND_TEXT['刑'] + '。' + (x.sub ? XING_TEXT[x.sub] + '。' : '自刑主自尋煩惱、情緒內耗，宜放寬心。'));
+      if (other === '日') parts.push('刑到夫妻宮，與伴侶相處多些包容。');
+      tone = 'bad';
+    } else {
+      parts.push(KIND_TEXT[x.kind] + '，影響多在' + palace.short + '方面。');
+      tone = 'bad';
+    }
+    return { tag: where + '・' + x.text, kind: x.kind, tone: tone, text: parts.join('') };
+  }
+
+  function annualDetail(y, r, st) {
+    var stemFav = st.favorable.indexOf(y.stemElement) >= 0;
+    var branchFav = st.favorable.indexOf(y.branchElement) >= 0;
+    var items = [];
+    if (y.taiSui === '值太歲') {
+      items.push({ tag: '值太歲', kind: '太歲', tone: 'bad', text: '流年地支與出生年支相同，是本命年。傳統認為這年變動與心理起伏較多，宜穩健行事，不宜冒進。' });
+    } else if (y.taiSui === '沖太歲') {
+      items.push({ tag: '沖太歲', kind: '太歲', tone: 'bad', text: '流年地支沖出生年支，傳統稱沖太歲。家庭、居住或工作環境容易變動，出行與健康多留意。' });
+    }
+    y.relations.forEach(function (x) { items.push(explainRelation(x, st)); });
+
+    var score = (stemFav ? 1 : -1) + (branchFav ? 1 : -1);
+    items.forEach(function (it) { score += it.tone === 'good' ? 0.5 : it.tone === 'bad' ? -0.5 : 0; });
+    var outlook = score >= 1.5 ? '較順' : score <= -2 ? '起伏較大' : '平穩';
+
+    var summary = '流年' + y.name + '：天干' + y.name[0] + '（' + y.stemElement + '，' + y.stemTenGod + '）' +
+      (stemFav ? '是喜用' : '是忌神') + '，地支' + y.name[1] + '（' + y.branchElement + '，' + y.branchTenGod + '）' +
+      (branchFav ? '是喜用' : '是忌神') + '。' + YEAR_THEME[y.stemTenGod] + '。';
+    if (!items.length) summary += '這年與命盤沒有明顯的合沖刑害，整體以流年本身的五行喜忌為主。';
+    return { outlook: outlook, summary: summary, items: items };
+  }
+
   // ---------- 流年 ----------
   function annualPillars(r, fromYear, count) {
     var ds = r.pillars.day.stemIndex;
     var chart = chartItems(r);
     var out = [];
+    var st = strength(r);
     for (var y = fromYear; y < fromYear + count; y++) {
       var idx = mod(y - 4, 60), s = idx % 10, b = idx % 12;
       var luck = null;
@@ -297,6 +407,8 @@
         taiSui: b === r.pillars.year.branchIndex ? '值太歲' : Math.abs(b - r.pillars.year.branchIndex) === 6 ? '沖太歲' : null,
         relations: rel
       });
+      var cur = out[out.length - 1];
+      cur.detail = annualDetail(cur, r, st);
     }
     return out;
   }

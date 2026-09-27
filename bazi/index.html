@@ -258,6 +258,14 @@
   .cmp-items li { align-items: start; }
   .k-中 { background: var(--metal); } .k-吉 { background: var(--wood); } .k-忌 { background: var(--fire); }
   .cmp-roles p { margin: 0 0 6px; }
+  button.term { all: unset; cursor: help; border-bottom: 1px dotted var(--muted); color: inherit; font: inherit; }
+  button.term:hover { border-bottom-color: var(--seal); color: var(--seal); }
+  button.term:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; border-radius: 2px; }
+  .term-pop { position: absolute; z-index: 10; width: min(320px, calc(100vw - 32px)); background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; box-shadow: 0 8px 24px rgba(0, 0, 0, .18); display: grid; gap: 6px; }
+  .term-pop b { font: 700 17px var(--serif); color: var(--seal); }
+  .term-pop p { margin: 0; font-size: 14px; line-height: 1.6; }
+  .term-pop button { justify-self: end; min-height: 32px; font-size: 13px; padding: 0 12px; letter-spacing: 0; }
+  .pdf-sheet button.term { border-bottom: 0; }
   .detail .fix { display: block; margin-top: 4px; font-size: 12.5px; color: var(--ink); }
   .detail em, .advice em { font-style: normal; font-weight: 700; font-size: 11px; letter-spacing: .06em; padding: 0 5px; margin-right: 6px; border-radius: 3px; background: var(--seal-soft2); color: var(--seal); }
   .advice { background: var(--paper); border: 1px dashed var(--line); border-radius: 8px; padding: 8px 10px; display: grid; gap: 4px; }
@@ -405,6 +413,8 @@
     <p class="status" id="status" role="status"></p>
   </form>
 
+  <div id="termPop" class="term-pop" role="dialog" aria-live="polite" hidden><b id="termName"></b><p id="termText"></p><button type="button" class="ghost" id="termClose">知道了</button></div>
+
   <section id="savedSec" aria-label="我的命盤">
     <div class="saved-head"><h2>我的命盤</h2><small id="storeNote">存在這個瀏覽器</small></div>
     <ul class="saved" id="savedList"></ul>
@@ -436,6 +446,7 @@
     <p>日主強弱以加權計分估算：月令地支權重 3，其他地支 1.2（藏干依本氣、中氣、餘氣分配），天干各 1；生扶日主的五行（印、比劫）占比 60% 以上為身強，50–60% 偏強，40–50% 偏弱，40% 以下身弱。喜用神一般採扶抑法；若日主極旺（生扶力量 80% 以上且官殺無力）判為從強格，若日主極弱（20% 以下、地支無根、天干無印比）判為從財、從殺或從兒格，喜忌改為順從旺勢。格局以月令取用：月令為日主之祿或羊刃為建祿格、月刃格，其餘取月令藏干中透出天干者（比劫不取），未透則取本氣。化氣格等更特殊的格局未處理。</p>
     <p>神煞只列常見幾種：天乙貴人、文昌、祿神、羊刃看日干；桃花、驛馬、華蓋、將星看年支與日支；紅鸞、天喜看年支；空亡以日柱所在旬推算。</p>
     <p>「儲存命盤」會把輸入資料存到你的 claude.ai 帳號，只有你自己看得到；無法使用帳號儲存時，改存在目前的瀏覽器。「匯出 PDF」會把目前的命盤與分析轉成 A4 PDF 檔。</p>
+    <p>結果中加上虛線底線的名詞可以點選，會顯示白話解釋。</p>
     <p>分析文字為傳統命理的通用說法，只是規則推算，並非對個人的判斷，結果僅供參考與娛樂。</p>
   </details>
   <footer>頁面預載的是範例資料，請換成你自己的出生資訊後按「排盤」，再按「儲存命盤」留存或「匯出 PDF」下載。</footer>
@@ -443,6 +454,7 @@
 
 <script src="bazi.js"></script>
 <script src="cities.js"></script>
+<script src="glossary.js"></script>
 <script src="analysis.js"></script>
 <script>
 (function () {
@@ -452,6 +464,69 @@
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var KEYS = ['year', 'month', 'day', 'hour'];
   var HEADS = ['年柱', '月柱', '日柱', '時柱'];
+
+  // ---------- 名詞小辭典 ----------
+  var TERM_RE = new RegExp('(' + Object.keys(BaziGlossary).sort(function (a, b) { return b.length - a.length; }).join('|') + ')');
+  var TERM_SKIP = 'svg, button, select, option, summary, .glyph, .kind, .outlook, .pill, .el-chip, .pattern-name, em, .term, .curve-tip, .tags, .ss, .gz, .ld-gz, .cmp-gz';
+  // 每個區塊只標記同一名詞第一次出現的地方，避免滿版底線
+  function markTerms(root) {
+    Array.prototype.forEach.call(root.children, function (block) {
+      var seen = {};
+      var walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT, {
+        acceptNode: function (n) {
+          if (!n.nodeValue.trim() || (n.parentElement && n.parentElement.closest(TERM_SKIP))) return NodeFilter.FILTER_REJECT;
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      });
+      var nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      nodes.forEach(function (node) {
+        var text = node.nodeValue, frag = null, rest = text;
+        while (rest) {
+          var m = TERM_RE.exec(rest);
+          if (!m) break;
+          var term = m[1];
+          if (seen[term]) {
+            // 已標過：跳過這個字，繼續往後找
+            frag = frag || document.createDocumentFragment();
+            frag.appendChild(document.createTextNode(rest.slice(0, m.index + term.length)));
+            rest = rest.slice(m.index + term.length);
+            continue;
+          }
+          seen[term] = true;
+          frag = frag || document.createDocumentFragment();
+          if (m.index) frag.appendChild(document.createTextNode(rest.slice(0, m.index)));
+          var btn = document.createElement('button');
+          btn.type = 'button'; btn.className = 'term'; btn.textContent = term; btn.dataset.term = term;
+          frag.appendChild(btn);
+          rest = rest.slice(m.index + term.length);
+        }
+        if (frag) {
+          if (rest) frag.appendChild(document.createTextNode(rest));
+          node.parentNode.replaceChild(frag, node);
+        }
+      });
+    });
+  }
+  function showTerm(btn) {
+    var pop = $('termPop');
+    $('termName').textContent = btn.dataset.term;
+    $('termText').textContent = BaziGlossary[btn.dataset.term];
+    pop.hidden = false;
+    var r = btn.getBoundingClientRect(), pw = pop.offsetWidth, vw = document.documentElement.clientWidth;
+    var left = Math.min(Math.max(8, r.left + window.scrollX - 20), window.scrollX + vw - pw - 8);
+    pop.style.left = left + 'px';
+    pop.style.top = (r.bottom + window.scrollY + 6) + 'px';
+    $('termClose').focus({ preventScroll: true });
+  }
+  function hideTerm() { $('termPop').hidden = true; }
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest && e.target.closest('.term');
+    if (t) { showTerm(t); return; }
+    if (!e.target.closest('#termPop')) hideTerm();
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') hideTerm(); });
+  $('termClose').addEventListener('click', hideTerm);
 
   // ---------- 一生運勢曲線 ----------
   var CURVE = { W: 820, H: 250, l: 34, r: 12, t: 30, b: 30, max: 4 };
@@ -729,6 +804,7 @@
     h += '</tbody></table></div><p class="legend">歲數為實歲。十神以日主為準：前者看流年天干，後者看地支本氣。「較順／平穩／起伏較大」依流年五行喜忌與沖合刑害加減計分，只是粗略參考。</p></div>';
     $('out').innerHTML = h;
     bindCurve(A.curve);
+    markTerms($('out'));
   }
 
   // ---------- 出生地 ----------
@@ -987,6 +1063,7 @@
     h += '<div class="advice"><p><em>相處建議</em></p><ol>' + res.advice.map(function (a) { return '<li>' + esc(a) + '</li>'; }).join('') + '</ol></div>';
     h += '<p class="note">' + res.note + '</p></div>';
     out.innerHTML = h;
+    markTerms(out);
   }
   $('cmpBtn').addEventListener('click', runCompare);
   $('name').addEventListener('input', function () { fillCompare(charts.slice().sort(function (a, b) { return (b.savedAt || 0) - (a.savedAt || 0); })); });

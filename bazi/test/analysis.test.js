@@ -180,3 +180,10 @@ test('合婚／合夥比對', () => {
   const partner = Bazi.compare(x, y, { mode: 'partner' });
   assert.ok(partner.items.every((i) => !/夫妻宮/.test(i.title)));
 });
+
+test('名詞小辭典', () => {
+  const G = require('../glossary.js');
+  for (const t of ['七殺', '夫妻宮', '空亡', '從格', '夏令時間', '天乙貴人', '十二長生', '喜用']) {
+    assert.ok(G[t] && G[t].length > 10, t);
+  }
+});

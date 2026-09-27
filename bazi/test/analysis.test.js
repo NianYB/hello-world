@@ -234,3 +234,15 @@ test('流月', () => {
   assert.strictEqual(b.months.solarYear, 2025);
   assert.strictEqual(b.months.currentIndex, 11); // 丑月
 });
+
+test('六親與感情', () => {
+  const f = Bazi.analyze(sample(), { currentYear: 2026 }).family;
+  assert.match(f.love.points[0], /夫妻宮（日支）為辰，本氣是偏印/);
+  assert.strictEqual(f.love.star.label, '官殺（夫星）'); // 女命看官殺
+  assert.ok(f.love.years.some((y) => y.year === 2029 && y.reasons.includes('紅鸞')));
+  assert.ok(f.parents.length >= 3 && f.siblings.length === 1 && f.children.length >= 1);
+  const m = Bazi.analyze(Bazi.calculate({ year: 1990, month: 5, day: 15, hour: 14, minute: 30, gender: 'male' }), { currentYear: 2026 }).family;
+  assert.strictEqual(m.love.star.label, '財星（妻星）');
+  const u = Bazi.analyze(Bazi.calculate({ year: 1990, month: 5, day: 15, unknownHour: true, gender: 'male' }), { currentYear: 2026 }).family;
+  assert.match(u.children[0], /不知道出生時辰/);
+});

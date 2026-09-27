@@ -299,6 +299,16 @@
   .month-card li b { display: block; font-size: 12px; }
   .month-card li.tone-good { border-left-color: var(--wood); } .month-card li.tone-good b { color: var(--wood); }
   .month-card li.tone-bad { border-left-color: var(--fire); } .month-card li.tone-bad b { color: var(--fire); }
+  .family { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .family section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 8px; align-content: start; }
+  .family .fam-love { grid-column: 1 / -1; }
+  .family h3 { margin: 0; font: 700 16px/1.3 var(--serif); letter-spacing: .08em; }
+  .family p { margin: 0; font-size: 14px; max-width: 70ch; }
+  .love-years { display: grid; gap: 6px; }
+  .love-years > div { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ly { display: inline-grid; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; }
+  .ly b { font-variant-numeric: tabular-nums; }
+  .ly small { font-size: 11px; color: var(--muted); }
   .detail .fix { display: block; margin-top: 4px; font-size: 12.5px; color: var(--ink); }
   .detail em, .advice em { font-style: normal; font-weight: 700; font-size: 11px; letter-spacing: .06em; padding: 0 5px; margin-right: 6px; border-radius: 3px; background: var(--seal-soft2); color: var(--seal); }
   .advice { background: var(--paper); border: 1px dashed var(--line); border-radius: 8px; padding: 8px 10px; display: grid; gap: 4px; }
@@ -794,6 +804,19 @@
     h += '<p class="note">數字為天干（1）、地支本氣（1）與中餘氣（各 0.5）的合計。' +
       (A.tenGods.prominent.length ? '較旺的是' + A.tenGods.prominent.map(function (x) { return x.name; }).join('、') + '。' : '') + '</p>';
     h += '</div></div>';
+
+    // 六親與感情
+    var FM = A.family, plist = function (arr) { return arr.map(function (t) { return '<p>' + t + '</p>'; }).join(''); };
+    h += '<div style="margin-top:28px"><h2>六親與感情</h2><div class="family">';
+    h += '<section class="fam-love"><h3>感情婚姻</h3>' + plist(FM.love.points) +
+      (FM.love.years.length ? '<div class="love-years"><span class="note">未來 12 年感情機會較多的年份</span><div>' + FM.love.years.map(function (y) {
+        return '<span class="ly"><b>' + y.year + '</b> ' + y.name + '<small>' + y.reasons.join('・') + '</small></span>';
+      }).join('') + '</div></div>' : '') +
+      '<div class="advice"><p><em>相處建議</em>' + FM.love.advice + '</p></div></section>';
+    h += '<section><h3>父母長輩</h3>' + plist(FM.parents) + '</section>';
+    h += '<section><h3>兄弟朋友</h3>' + plist(FM.siblings) + '</section>';
+    h += '<section><h3>子女晚輩</h3>' + plist(FM.children) + '</section>';
+    h += '</div><p class="note" style="margin-top:8px">' + FM.note + '</p></div>';
 
     // 干支關係、神煞、空亡胎元
     h += '<div class="two" style="margin-top:28px"><div><h2>干支關係</h2>';

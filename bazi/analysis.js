@@ -741,6 +741,114 @@
     return out;
   }
 
+  // ---------- 六親與感情 ----------
+  var SPOUSE_BY_GOD = {
+    '比肩': '配偶個性獨立、像朋友，兩人平起平坐，但也容易各有主見、互不相讓',
+    '劫財': '配偶有衝勁、好勝，相處有火花，金錢觀需要多溝通',
+    '食神': '配偶溫和、重生活情趣，相處輕鬆愉快',
+    '傷官': '配偶聰明、個性鮮明、口才好，但彼此說話容易太直',
+    '偏財': '配偶交際能力好、大方，能帶來新鮮感與機會',
+    '正財': '配偶務實、顧家，重視穩定的生活與經濟',
+    '七殺': '配偶有魄力、較強勢，對你有保護也有壓力',
+    '正官': '配偶有責任感、守規矩，給人穩定可靠的感覺',
+    '偏印': '配偶想法獨特、內斂，需要彼此保留一些個人空間',
+    '正印': '配偶體貼、會照顧人、有涵養，相處像家人'
+  };
+
+  function family(r, st, tg, ss, currentYear) {
+    var P = r.pillars, ds = P.day.stemIndex, db = P.day.branchIndex;
+    var gender = r.input.gender;
+    var fav = function (el) { return st.favorable.indexOf(el) >= 0; };
+    var countOf = function (names) { return names.reduce(function (n, g) { return n + (tg.counts[g] || 0); }, 0); };
+    var inStems = function (names) {
+      return stemPosOf(r).some(function (k) { return names.indexOf(P[k].tenGod) >= 0; });
+    };
+    var chart = chartItems(r);
+    var rels = pairRelations(chart).concat(groupRelations(chart));
+    var relsWith = function (label) { return rels.filter(function (x) { return x.who.indexOf(label) >= 0; }); };
+
+    // 感情婚姻
+    var love = [];
+    var spouseGod = P.day.hiddenStems[0].tenGod, spouseEl = E[BRANCH_EL[db]];
+    love.push('夫妻宮（日支）為' + P.day.branch + '，本氣是' + spouseGod + '：' + SPOUSE_BY_GOD[spouseGod] + '。');
+    love.push('夫妻宮五行屬' + spouseEl + '，' + (fav(spouseEl) ? '是你的喜用，配偶多半是你的助力，婚後生活較能互相扶持。' : '是你的忌神，兩人需要多花心思磨合，婚後別把所有壓力都放在對方身上。'));
+    var dayRels = relsWith('日').filter(function (x) { return x.type.indexOf('地支') === 0; });
+    var bad = dayRels.filter(function (x) { return x.kind !== '合'; }), good = dayRels.filter(function (x) { return x.kind === '合'; });
+    if (bad.length) love.push('夫妻宮在原局有' + bad.map(function (x) { return x.text; }).join('、') + '，感情容易受外在因素干擾或有摩擦，晚一點結婚、多溝通能減少波折。');
+    if (good.length) love.push('夫妻宮與' + good.map(function (x) { return x.text; }).join('、') + '，代表容易結緣、有人牽線。');
+    var starNames = gender === 'male' ? ['正財', '偏財'] : gender === 'female' ? ['正官', '七殺'] : null;
+    var star = null;
+    if (starNames) {
+      var label = gender === 'male' ? '財星（妻星）' : '官殺（夫星）';
+      var n = countOf(starNames), shown = inStems(starNames);
+      var mixed = gender === 'female' && tg.counts['正官'] > 0 && tg.counts['七殺'] > 0;
+      var text = n === 0 ? '命中' + label + '不明顯，緣分通常來得較晚，或需要自己主動經營、把握機會。'
+        : n >= 3 ? '命中' + label + '較多，異性緣好、選擇多，感情容易複雜，定下來前多觀察。'
+        : '命中有' + label + (shown ? '，並透出天干，感情緣分較明確。' : '，藏在地支，感情較含蓄、慢熱。');
+      if (mixed) text += '正官與七殺同見（官殺混雜），擇偶時容易在兩種類型間猶豫。';
+      love.push(text);
+      star = { label: label, count: n, shown: shown };
+    } else {
+      love.push('填寫性別後，可以看配偶星（男看財星、女看官殺）的分析。');
+    }
+    var allSs = [];
+    POS_ALL.forEach(function (k) { (ss[k] || []).forEach(function (x) { if (allSs.indexOf(x) < 0) allSs.push(x); }); });
+    var loveSs = allSs.filter(function (x) { return ['桃花', '紅鸞', '天喜'].indexOf(x) >= 0; });
+    if (loveSs.length) love.push('命帶' + loveSs.join('、') + '，人緣與異性緣佳。');
+
+    // 感情機會較多的年份
+    var yb = P.year.branchIndex, hongluan = mod(3 - yb, 12), tianxi = mod(hongluan + 6, 12);
+    var loveYears = [];
+    for (var y = currentYear; y < currentYear + 12; y++) {
+      var idx = mod(y - 4, 60), s2 = idx % 10, b2 = idx % 12, why = [];
+      if (b2 === hongluan) why.push('紅鸞');
+      if (b2 === tianxi) why.push('天喜');
+      if (BRANCH_LIUHE[key(b2, db)]) why.push('合夫妻宮');
+      if (starNames && starNames.indexOf(Bazi.tenGod(ds, s2)) >= 0) why.push((gender === 'male' ? '財星' : '官星') + '透出');
+      if (why.length) loveYears.push({ year: y, name: S[s2] + B[b2], reasons: why });
+    }
+    var loveAdvice = fav(spouseEl)
+      ? '夫妻宮為喜用，找到對的人後容易互相成就；多表達感謝，讓對方知道他的付出被看見。'
+      : '夫妻宮為忌，建議找個性互補、步調相近的人，並保留各自的空間與興趣。';
+
+    // 父母
+    var parents = [];
+    var yearFav = fav(P.year.stemElement) && fav(P.year.branchElement), yearBad = !fav(P.year.stemElement) && !fav(P.year.branchElement);
+    parents.push('年柱' + P.year.name + '代表祖上與早年環境，' + (yearFav ? '五行皆為喜用，早年家庭多給予助力。' : yearBad ? '五行皆為忌，早年環境較辛苦，靠自己打拚的成分多。' : '喜忌參半，早年家庭助力普通。'));
+    var yinN = countOf(['正印', '偏印']), caiN = countOf(['正財', '偏財']);
+    parents.push(yinN >= 2.5 ? '印星旺，與母親或長輩緣分深、受照顧多，但也要學習獨立。' : yinN === 0 ? '印星弱，較少長輩庇蔭，凡事多靠自己。' : '印星適中，與母親或長輩關係平穩。');
+    parents.push(tg.counts['偏財'] > 0 ? '偏財（父星）有現，與父親有緣，父親對你的價值觀影響較大。' : '偏財（父星）不顯，與父親相處時間或交流可能較少。');
+    var ymClash = rels.filter(function (x) { return x.who.indexOf('年') >= 0 && x.who.indexOf('月') >= 0 && x.kind !== '合'; });
+    if (ymClash.length) parents.push('年月柱有' + ymClash.map(function (x) { return x.text; }).join('、') + '，與父母觀念差異較大，或較早離家發展。');
+
+    // 兄弟朋友
+    var bjN = countOf(['比肩', '劫財']), bjFav = fav(E[STEM_EL[ds]]);
+    var siblings = [bjN >= 2.5 ? '比劫多，兄弟姊妹或朋友多，重義氣' + (bjFav ? '，而且比劫為喜用，朋友是你的助力。' : '，但比劫為忌，合夥與借貸要謹慎，避免被朋友拖累。')
+      : bjN === 0 ? '比劫少，兄弟朋友助力不多，習慣自己處理事情。' : '比劫適中，與兄弟朋友往來平穩' + (bjFav ? '，關鍵時能互相幫忙。' : '，保持適當距離較好。')];
+
+    // 子女
+    var children = [];
+    if (!P.hour) {
+      children.push('不知道出生時辰，時柱（子女宮）無法判斷，以下只看子女星。');
+    } else {
+      var hFav = fav(P.hour.stemElement) && fav(P.hour.branchElement);
+      children.push('時柱（子女宮）' + P.hour.name + '，' + (hFav ? '為喜用，子女多半貼心、晚年較有依靠。' : fav(P.hour.stemElement) || fav(P.hour.branchElement) ? '喜忌參半，與子女關係平穩。' : '為忌，與子女相處需多些耐心，教養上多溝通少命令。'));
+      var hdClash = rels.filter(function (x) { return x.who.indexOf('日') >= 0 && x.who.indexOf('時') >= 0 && x.kind !== '合'; });
+      if (hdClash.length) children.push('日時柱有' + hdClash.map(function (x) { return x.text; }).join('、') + '，與子女在想法上容易有代溝。');
+    }
+    var kidNames = gender === 'male' ? ['正官', '七殺'] : gender === 'female' ? ['食神', '傷官'] : null;
+    if (kidNames) {
+      var kn = countOf(kidNames);
+      children.push((gender === 'male' ? '官殺' : '食傷') + '為子女星，' + (kn === 0 ? '子女緣較晚或需要多用心經營。' : kn >= 3 ? '子女星旺，與子女緣分深，也容易為子女操心。' : '子女緣分正常。'));
+    }
+
+    return {
+      love: { points: love, star: star, years: loveYears, advice: loveAdvice },
+      parents: parents, siblings: siblings, children: children,
+      note: '六親分析為傳統命理的推論，家庭關係受後天相處影響很大，僅供參考。'
+    };
+  }
+
   // ---------- 流月 ----------
   var MONTH_TIP = {
     '比肩': '適合和夥伴一起推進事情，金錢往來分清楚。',
@@ -948,6 +1056,7 @@
     res.profile = profile(r, res.strength, res.tenGods, res.shensha);
     var cy = (opts && opts.currentYear) || new Date().getFullYear();
     res.luck = luckDetails(r, res.strength, cy);
+    res.family = family(r, res.strength, res.tenGods, res.shensha, cy);
     res.curve = fortuneCurve(r, res.strength, (opts && opts.curveYears) || 90);
     // 流月：以目前所在的節氣年（立春起算）為準
     var nowJD = (opts && opts.nowJD) || (Date.now() / 86400000 + 2440587.5);

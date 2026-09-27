@@ -56,6 +56,8 @@ console.log(`  ${st.deLingText}；${st.deDiText}；${st.deShiText}`);
 console.log(`  喜用：${st.favorable.join('、')}　忌：${st.unfavorable.join('、')}　（${st.reason}）`);
 if (st.climate) console.log(`  調候：${st.climate.text}`);
 if (a.missingElements.length) console.log(`  五行缺：${a.missingElements.join('、')}`);
+console.log('\n【五行調和】');
+a.remedies.favorable.forEach((x) => console.log(`  補${x.element}：顏色 ${x.color}；方位 ${x.direction}；領域 ${x.fields}；習慣 ${x.habits}`));
 console.log(`\n【日主】${a.dayMasterNote}`);
 if (a.tenGods.prominent.length) {
   console.log('【十神較旺】' + a.tenGods.prominent.map((g) => `${g.name}（${g.note}）`).join('；'));
@@ -81,7 +83,9 @@ a.annual.forEach((y) => {
   console.log(`${y.year} ${y.name}（${y.stemTenGod}／${y.branchTenGod}）${y.luck ? '運' + y.luck : ''}${extra.length ? '：' + extra.join('、') : ''}`);
   if (showDetail) {
     console.log(`  [${y.detail.outlook}] ${y.detail.summary}`);
-    y.detail.items.forEach((it) => console.log(`  - ${it.tag}：${it.text}`));
+    y.detail.items.forEach((it) => console.log(`  - ${it.tag}：${it.text}\n    化解：${it.fix}`));
+    console.log(`  心態：${y.detail.mindset}`);
+    y.detail.actions.forEach((a, i) => console.log(`  建議 ${i + 1}. ${a}`));
   }
 });
 console.log();

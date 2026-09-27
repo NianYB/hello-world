@@ -184,6 +184,18 @@
   .detail li b { display: block; font-weight: 700; font-size: 12px; }
   .detail li.tone-good { border-left-color: var(--wood); } .detail li.tone-good b { color: var(--wood); }
   .detail li.tone-bad { border-left-color: var(--fire); } .detail li.tone-bad b { color: var(--fire); }
+  .detail .fix { display: block; margin-top: 4px; font-size: 12.5px; color: var(--ink); }
+  .detail em, .advice em { font-style: normal; font-weight: 700; font-size: 11px; letter-spacing: .06em; padding: 0 5px; margin-right: 6px; border-radius: 3px; background: var(--seal-soft2); color: var(--seal); }
+  .advice { background: var(--paper); border: 1px dashed var(--line); border-radius: 8px; padding: 8px 10px; display: grid; gap: 4px; }
+  .advice p { margin: 0; }
+  .advice ol { margin: 0; padding-left: 1.4em; display: grid; gap: 2px; }
+  .advice em { background: var(--wood); color: var(--seal-ink); }
+  .remedy-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .remedy { border: 1px solid var(--line); border-radius: 8px; padding: 12px; display: grid; gap: 8px; align-content: start; }
+  .remedy-head { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+  .remedy dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 13px; }
+  .remedy dt { color: var(--muted); white-space: nowrap; }
+  .remedy dd { margin: 0; }
   .outlook { display: inline-block; font-size: 12px; font-weight: 700; padding: 0 7px; margin-right: 6px; border-radius: 4px; color: var(--seal-ink); background: var(--metal); }
   .outlook.o-較順 { background: var(--wood); } .outlook.o-起伏較大 { background: var(--fire); }
   table.annual th, table.annual td { padding: 8px 10px; border-top: 1px solid var(--line); text-align: left; vertical-align: top; }
@@ -419,6 +431,17 @@
       (A.missingElements.length ? '八字天干地支中缺' + A.missingElements.join('、') + '。' : '') + '</p>';
     h += '</div></div>';
 
+    // 五行調和建議
+    var RM = A.remedies;
+    h += '<div style="margin-top:28px"><h2>五行調和建議</h2><div class="panel">';
+    h += '<div class="remedy-grid">' + RM.favorable.map(function (x, i) {
+      return '<div class="remedy"><div class="remedy-head">' + elChip(x.element) + '<span>' + (i === 0 ? '最需要補' : '喜用') + '</span></div>' +
+        '<dl><dt>顏色</dt><dd>' + x.color + '</dd><dt>方位</dt><dd>' + x.direction + '</dd><dt>有利時節</dt><dd>' + x.season + '</dd>' +
+        '<dt>適合領域</dt><dd>' + x.fields + '</dd><dt>日常習慣</dt><dd>' + x.habits + '</dd></dl></div>';
+    }).join('') + '</div>';
+    h += '<p class="note">忌神 ' + RM.avoid.map(function (x) { return x.element + '（' + x.color + '）'; }).join('、') + ' 不必刻意避開，只是不宜過量。' + RM.note + '</p>';
+    h += '</div></div>';
+
     // 日主與十神
     h += '<div style="margin-top:28px"><h2>日主與十神</h2><div class="panel">';
     h += '<p style="margin:0"><b class="e-' + r.dayMaster.element + '" style="font:900 20px var(--serif)">' + r.dayMaster.stem + '</b>　' + A.dayMasterNote + '</p>';
@@ -473,8 +496,11 @@
       var D = y.detail;
       var detail = '<div class="detail"><p><span class="outlook o-' + D.outlook + '">' + D.outlook + '</span>' + D.summary + '</p>' +
         (D.items.length ? '<ul>' + D.items.map(function (it) {
-          return '<li class="tone-' + it.tone + '"><b>' + it.tag + '</b>' + it.text + '</li>';
-        }).join('') + '</ul>' : '') + '</div>';
+          return '<li class="tone-' + it.tone + '"><b>' + it.tag + '</b>' + it.text +
+            (it.fix ? '<span class="fix"><em>化解</em>' + it.fix + '</span>' : '') + '</li>';
+        }).join('') + '</ul>' : '') +
+        '<div class="advice"><p><em>心態</em>' + D.mindset + '</p><p><em>建議做法</em></p><ol>' +
+        D.actions.map(function (a) { return '<li>' + a + '</li>'; }).join('') + '</ol></div></div>';
       h += '<tr' + (y.year === cy ? ' class="now"' : '') + '><td class="num" data-label="年份">' + y.year + '<br><span class="none">' + y.age + ' 歲</span></td>' +
         '<td class="gz" data-label="干支"><span class="e-' + y.stemElement + '">' + y.name[0] + '</span><span class="e-' + y.branchElement + '">' + y.name[1] + '</span></td>' +
         '<td data-label="十神">' + y.stemTenGod + '／' + y.branchTenGod + '</td><td data-label="大運">' + (y.luck || '<span class="none">未起運</span>') + '</td>' +

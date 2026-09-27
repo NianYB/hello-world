@@ -317,6 +317,86 @@
     '正印': '正印年，易得長輩、上司支持，利學習、證照與休養'
   };
 
+  // ---------- 化解與建議 ----------
+  // 五行的傳統對應，用來補喜用、避忌神
+  var ELEMENT_REMEDY = {
+    '木': { color: '綠色、青色', direction: '東方', season: '春季', fields: '教育、出版、文化、設計、園藝、醫療照護', habits: '多親近植物與大自然、閱讀進修、早睡早起、伸展運動' },
+    '火': { color: '紅色、紫色、橘色', direction: '南方', season: '夏季', fields: '傳播、行銷、餐飲、能源、演藝、科技電子', habits: '多曬太陽、有氧運動、主動社交與表達、保持熱情' },
+    '土': { color: '黃色、咖啡色、米色', direction: '中央、本地', season: '四季交替時', fields: '不動產、建築、農業、管理、顧問、倉儲', habits: '規律作息、健行爬山、腳踏實地做計畫、培養耐心' },
+    '金': { color: '白色、金色、銀色', direction: '西方', season: '秋季', fields: '金融、法律、機械、科技製造、珠寶、管理制度', habits: '整理環境、建立紀律與預算、重訓、斷捨離' },
+    '水': { color: '黑色、藍色、深灰', direction: '北方', season: '冬季', fields: '貿易、物流、旅遊、資訊網路、研究、顧問', habits: '多喝水、游泳或親水活動、旅行交流、冥想沉澱' }
+  };
+
+  function remedies(st) {
+    return {
+      favorable: st.favorable.map(function (e) { return Object.assign({ element: e }, ELEMENT_REMEDY[e]); }),
+      avoid: st.unfavorable.map(function (e) { return { element: e, color: ELEMENT_REMEDY[e].color, direction: ELEMENT_REMEDY[e].direction }; }),
+      note: '以上為傳統五行調和的做法：生活中多接觸喜用五行的顏色、方位與活動，忌神五行不必刻意排斥，只是不宜過量。這些做法主要幫助調整心境與節奏，真正的改變仍來自行動與選擇。'
+    };
+  }
+
+  var FIX_CHONG = {
+    '年': '多陪伴、關心長輩，安排健康檢查；搬家或處理家族事務前多比較、別倉促決定。',
+    '月': '想換工作先確定下一步再動；重要合約與職務異動多看一次條文，保留轉圜空間。',
+    '日': '與伴侶多溝通、避免冷戰，重大感情決定緩一緩；維持規律作息與運動。',
+    '時': '多花時間陪伴子女、晚輩；手上的計畫準備備案，時程留些緩衝。',
+    '大運': '這年不宜孤注一擲，保留現金與退路，重大決定分階段進行。'
+  };
+  var FIX_XING = {
+    '無恩之刑': '幫忙量力而為，不替人作保、不借大額款項，人情往來留紀錄。',
+    '恃勢之刑': '放下身段、多聽不同意見，避免用強勢方式解決問題。',
+    '無禮之刑': '越親近越要保持禮貌與尊重，吵架時先暫停，事後再談。',
+    'self': '給自己留獨處與休息時間，把煩惱寫下來或找人聊，避免鑽牛角尖。'
+  };
+
+  function relationFix(x, other, isStem, tone) {
+    if (x.kind === '合') {
+      if (tone === 'good') return '主動把握合作與人脈，適合談合作、拓展關係或推動計畫。';
+      if (tone === 'bad') return '答應邀約或合作前先想清楚代價，設好界線，別因人情而勉強。';
+      return '合作前看清條件再投入，好處拿到手也要留意牽絆。';
+    }
+    if (x.kind === '沖') {
+      if (isStem && other === '日') return '壓力大時放慢腳步，重要決定先請益可信任的人，避免正面衝突。';
+      return FIX_CHONG[other];
+    }
+    if (x.kind === '刑') return (x.sub ? FIX_XING[x.sub] : FIX_XING.self) + '開車、運動與使用工具時多注意安全。';
+    if (x.kind === '害') return '重要事情白紙黑字，少在背後談論他人，對過分熱絡的邀約保持一點距離。';
+    return '計畫分段完成，預算與時間多留一成緩衝，完成一段再進行下一段。';
+  }
+
+  var YEAR_ADVICE = {
+    '比肩': { mindset: '把同輩當夥伴而不是對手，合作比單打獨鬥走得遠。', actions: ['和朋友、同事一起完成目標', '金錢往來分清楚，避免合夥糾紛'] },
+    '劫財': { mindset: '衝勁很好，但先守住再擴張。', actions: ['控制開銷、建立緊急預備金', '不借錢、不作保，投資設停損'] },
+    '食神': { mindset: '放鬆享受過程，好心情本身就是生產力。', actions: ['安排進修、培養興趣或創作', '注意飲食節制，別放縱過頭'] },
+    '傷官': { mindset: '有想法很好，表達時多留一分餘地。', actions: ['把創意落實成作品或提案', '說話前先想三秒，避免頂撞上司或長輩'] },
+    '偏財': { mindset: '機會多時更要挑，懂得說不才能留住財。', actions: ['拓展人脈、爭取業務機會', '投資只用閒錢，記帳掌握花費'] },
+    '正財': { mindset: '穩穩累積，時間會站在你這邊。', actions: ['專注本業、爭取加薪或穩定收入', '開始或加強定期儲蓄與理財'] },
+    '七殺': { mindset: '壓力是磨練，把挑戰當成升級的機會。', actions: ['面對困難正面迎擊，但別硬碰硬', '規律運動釋放壓力，留意意外與健康'] },
+    '正官': { mindset: '守規矩、重承諾，好名聲就是最好的護身符。', actions: ['爭取升遷、考核或證照', '遵守法規與流程，文件合約仔細確認'] },
+    '偏印': { mindset: '適合往內探索，但別把自己關起來。', actions: ['深入研究專業、學習冷門技能', '保持社交與傾訴管道，避免悶著情緒'] },
+    '正印': { mindset: '接受幫助不丟臉，也記得回饋支持你的人。', actions: ['進修、考證照或充電休養', '多與長輩、上司請益，建立信任'] }
+  };
+
+  function yearAdvice(y, st, items, outlook) {
+    var base = YEAR_ADVICE[y.stemTenGod];
+    var actions = base.actions.slice();
+    var mindset = base.mindset;
+    if (outlook === '起伏較大') mindset = '今年變數較多，以守為攻、穩中求進；' + mindset;
+    else if (outlook === '較順') mindset = '今年助力較多，可以積極一些；' + mindset;
+
+    var badEls = [y.stemElement, y.branchElement].filter(function (e, i, a) { return st.favorable.indexOf(e) < 0 && a.indexOf(e) === i; });
+    if (badEls.length) {
+      var fav = st.favorable[0], R = ELEMENT_REMEDY[fav];
+      actions.push('流年' + badEls.join('、') + '為忌，可多補喜用的' + fav + '：' + R.habits.split('、').slice(0, 2).join('、') + '，穿搭可多用' + R.color.split('、')[0]);
+    }
+    if (y.taiSui) {
+      actions.push('逢' + y.taiSui + '，重大投資與決定放慢；民間習俗會到廟宇安太歲求心安，可依個人信仰自行斟酌');
+    }
+    var hasSpouseClash = items.some(function (it) { return /^日支/.test(it.tag) && (it.kind === '沖' || it.kind === '刑'); });
+    if (hasSpouseClash) actions.push('夫妻宮受沖刑，多留時間經營感情，也別忽略身體檢查');
+    return { mindset: mindset, actions: actions };
+  }
+
   function favorLabel(element, st) {
     var els = element.split('');
     var fav = els.filter(function (e) { return st.favorable.indexOf(e) >= 0; }).length;
@@ -353,7 +433,7 @@
       parts.push(KIND_TEXT[x.kind] + '，影響多在' + palace.short + '方面。');
       tone = 'bad';
     }
-    return { tag: where + '・' + x.text, kind: x.kind, tone: tone, text: parts.join('') };
+    return { tag: where + '・' + x.text, kind: x.kind, tone: tone, text: parts.join(''), fix: relationFix(x, other, isStem, tone) };
   }
 
   function annualDetail(y, r, st) {
@@ -361,9 +441,11 @@
     var branchFav = st.favorable.indexOf(y.branchElement) >= 0;
     var items = [];
     if (y.taiSui === '值太歲') {
-      items.push({ tag: '值太歲', kind: '太歲', tone: 'bad', text: '流年地支與出生年支相同，是本命年。傳統認為這年變動與心理起伏較多，宜穩健行事，不宜冒進。' });
+      items.push({ tag: '值太歲', kind: '太歲', tone: 'bad', text: '流年地支與出生年支相同，是本命年。傳統認為這年變動與心理起伏較多，宜穩健行事，不宜冒進。',
+        fix: '把這年當成調整與打底的一年：照顧好身體與情緒，重要決定多徵詢意見，不做高風險投資。' });
     } else if (y.taiSui === '沖太歲') {
-      items.push({ tag: '沖太歲', kind: '太歲', tone: 'bad', text: '流年地支沖出生年支，傳統稱沖太歲。家庭、居住或工作環境容易變動，出行與健康多留意。' });
+      items.push({ tag: '沖太歲', kind: '太歲', tone: 'bad', text: '流年地支沖出生年支，傳統稱沖太歲。家庭、居住或工作環境容易變動，出行與健康多留意。',
+        fix: '變動來了就順勢調整，事先做好搬遷、轉職等備案；出行注意交通安全，定期健康檢查。' });
     }
     y.relations.forEach(function (x) { items.push(explainRelation(x, st)); });
 
@@ -375,7 +457,8 @@
       (stemFav ? '是喜用' : '是忌神') + '，地支' + y.name[1] + '（' + y.branchElement + '，' + y.branchTenGod + '）' +
       (branchFav ? '是喜用' : '是忌神') + '。' + YEAR_THEME[y.stemTenGod] + '。';
     if (!items.length) summary += '這年與命盤沒有明顯的合沖刑害，整體以流年本身的五行喜忌為主。';
-    return { outlook: outlook, summary: summary, items: items };
+    var advice = yearAdvice(y, st, items, outlook);
+    return { outlook: outlook, summary: summary, items: items, mindset: advice.mindset, actions: advice.actions };
   }
 
   // ---------- 流年 ----------
@@ -440,6 +523,7 @@
       strength: strength(r),
       tenGods: tenGodSummary(r),
       dayMasterNote: DAY_MASTER_NOTES[P.day.stemIndex],
+      remedies: remedies(strength(r)),
       missingElements: missingElements,
       annual: annualPillars(r, opts.annualFrom || currentYear, opts.annualCount || 10)
     };

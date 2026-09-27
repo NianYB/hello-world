@@ -85,3 +85,20 @@ test('流年詳細說明', () => {
   const y2030 = a.annual.find((x) => x.year === 2030);
   assert.ok(y2030.detail.items.some((i) => i.tag === '日支・辰戌相沖' && /感情/.test(i.text)));
 });
+
+test('化解與建議', () => {
+  const a = Bazi.analyze(sample(), { currentYear: 2026 });
+  assert.deepStrictEqual(a.remedies.favorable.map((x) => x.element), a.strength.favorable);
+  assert.strictEqual(a.remedies.favorable[0].direction, '東方'); // 木
+  for (const y of a.annual) {
+    assert.ok(y.detail.mindset.length > 0);
+    assert.ok(y.detail.actions.length >= 2);
+    for (const it of y.detail.items) assert.ok(it.fix && it.fix.length > 0, y.year + ' ' + it.tag);
+  }
+  // 忌神年會建議補喜用；太歲年提到安太歲
+  const y2028 = a.annual.find((x) => x.year === 2028); // 戊申：土金皆忌
+  assert.ok(y2028.detail.actions.some((t) => /可多補喜用的木/.test(t)));
+  assert.ok(a.annual[0].detail.actions.some((t) => /安太歲/.test(t)));
+  const y2030 = a.annual.find((x) => x.year === 2030); // 辰戌沖日支
+  assert.ok(y2030.detail.actions.some((t) => /夫妻宮/.test(t)));
+});

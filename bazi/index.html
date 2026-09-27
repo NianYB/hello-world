@@ -274,6 +274,15 @@
   .lunar-fields small { font-size: 12px; color: var(--muted); min-height: 1.3em; }
   .lunar-fields small.bad { color: var(--fire); }
   @media (max-width: 480px) { fieldset.lunar-fields { grid-column: 1 / -1; } }
+  .unknown { font: 900 32px/1 var(--serif); color: var(--line); }
+  .hour-cmp { gap: 10px; }
+  .hour-table { border-collapse: collapse; width: 100%; font-size: 13px; min-width: 640px; }
+  .hour-table th, .hour-table td { padding: 8px 10px; border-top: 1px solid var(--line); text-align: left; vertical-align: top; }
+  .hour-table thead th { border-top: 0; font-weight: 500; color: var(--muted); font-size: 12px; }
+  .hour-table .gz { font: 900 18px var(--serif); white-space: nowrap; }
+  .hour-table .hint { font-size: 12.5px; }
+  .hour-table .pick-hour { font-size: 12px; letter-spacing: 0; min-height: 30px; padding: 0 10px; white-space: nowrap; }
+  .pdf-sheet .hour-table .pick-hour { display: none; }
   .detail .fix { display: block; margin-top: 4px; font-size: 12.5px; color: var(--ink); }
   .detail em, .advice em { font-style: normal; font-weight: 700; font-size: 11px; letter-spacing: .06em; padding: 0 5px; margin-right: 6px; border-radius: 3px; background: var(--seal-soft2); color: var(--seal); }
   .advice { background: var(--paper); border: 1px dashed var(--line); border-radius: 8px; padding: 8px 10px; display: grid; gap: 4px; }
@@ -405,6 +414,7 @@
       <small id="lunarNote"></small>
     </fieldset>
     <label>出生時間<input id="time" type="time" required value="14:30"></label>
+    <label class="check"><input id="unk" type="checkbox"> 不知道出生時辰</label>
     <label>性別
       <select id="gender"><option value="female">女</option><option value="male">男</option></select>
     </label>
@@ -489,7 +499,7 @@
 
   // ---------- 名詞小辭典 ----------
   var TERM_RE = new RegExp('(' + Object.keys(BaziGlossary).sort(function (a, b) { return b.length - a.length; }).join('|') + ')');
-  var TERM_SKIP = 'svg, button, select, option, summary, .glyph, .kind, .outlook, .pill, .el-chip, .pattern-name, em, .term, .curve-tip, .tags, .ss, .gz, .ld-gz, .cmp-gz';
+  var TERM_SKIP = 'svg, button, select, option, summary, .rowlabel, .glyph, .kind, .outlook, .pill, .el-chip, .pattern-name, em, .term, .curve-tip, .tags, .ss, .gz, .ld-gz, .cmp-gz';
   // 每個區塊只標記同一名詞第一次出現的地方，避免滿版底線
   function markTerms(root) {
     Array.prototype.forEach.call(root.children, function (block) {
@@ -640,10 +650,10 @@
     var A = Bazi.analyze(r);
     var ST = A.strength;
     var nm = $('name').value.trim();
-    h += '<div class="report-head"><b>' + (nm ? esc(nm) : '八字命盤') + '</b><span>國曆 ' + fmt(r.input) + '（' + (cityZone() ? $('city').value + '，' : '') + 'UTC' + (r.input.timezone >= 0 ? '+' : '') + r.input.timezone + '）</span>' +
+    h += '<div class="report-head"><b>' + (nm ? esc(nm) : '八字命盤') + '</b><span>國曆 ' + (r.unknownHour ? fmt(r.input).slice(0, 10) + ' 時辰不詳' : fmt(r.input)) + '（' + (cityZone() ? $('city').value + '，' : '') + 'UTC' + (r.input.timezone >= 0 ? '+' : '') + r.input.timezone + '）</span>' +
       lunarText(r.input) +
       '<span>' + (r.input.gender === 'male' ? '男' : '女') + '命</span>' +
-      '<span>' + P.year.name + ' ' + P.month.name + ' ' + P.day.name + ' ' + P.hour.name + '</span></div>';
+      '<span>' + P.year.name + ' ' + P.month.name + ' ' + P.day.name + ' ' + (P.hour ? P.hour.name : '時辰未知') + '</span></div>';
 
     h += '<div class="summary" style="margin-top:12px">';
     h += '<span>日主 <b class="e-' + r.dayMaster.element + '">' + r.dayMaster.stem + '</b>（' + r.dayMaster.yinYang + r.dayMaster.element + '）</span>';
@@ -655,6 +665,20 @@
     }
     if (r.solarTime) h += '<span>真太陽時 <b>' + fmt(r.solarTime.time) + '</b>（' + (r.solarTime.offsetMinutes >= 0 ? '+' : '') + r.solarTime.offsetMinutes.toFixed(1) + ' 分）</span>';
     h += '</div>';
+
+    // 不確定時辰：十二時辰對照
+    if (r.unknownHour) {
+      var HO = Bazi.hourOptions(Object.assign({}, inputFromState(formState()), { unknownHour: false }));
+      h += '<div class="panel hour-cmp" style="margin-top:16px"><h2 style="margin:0">十二時辰對照</h2>' +
+        '<p class="note">不知道時辰時，以下分析只用年、月、日三柱，時柱相關的神煞、關係與部分判斷會缺漏。時柱會影響身強弱與喜用神，可對照下表各時辰的特質，挑出最符合自己的時辰再排一次。</p>' +
+        '<div class="table-wrap"><table class="hour-table"><thead><tr><th>時辰</th><th>時柱</th><th>格局・強弱</th><th>喜用</th><th>時柱特質</th><th></th></tr></thead><tbody>' +
+        HO.map(function (o) {
+          return '<tr><td><b>' + o.name + '</b><br><span class="none">' + o.range + '</span></td><td class="gz">' + o.pillar + '</td>' +
+            '<td>' + o.pattern + '<br><span class="none">' + o.level + '</span></td><td>' + o.favorable.join('、') + '</td>' +
+            '<td class="hint">' + o.hint + '</td>' +
+            '<td><button type="button" class="ghost pick-hour" data-time="' + pad(o.hour) + ':' + pad(o.minute) + '">用這個時辰</button></td></tr>';
+        }).join('') + '</tbody></table></div></div>';
+    }
 
     // 命盤總覽：個人特質與工作建議
     var PF = A.profile;
@@ -673,7 +697,9 @@
     h += '<div class="corner"></div>' + HEADS.map(function (x, i) { return '<div class="head' + (i === 2 ? ' col-day' : '') + '">' + x + '</div>'; }).join('');
     var row = function (label, fn) {
       h += '<div class="rowlabel">' + label + '</div>';
-      KEYS.forEach(function (k) { h += '<div class="' + (k === 'day' ? 'col-day' : '') + '">' + fn(P[k], k) + '</div>'; });
+      KEYS.forEach(function (k) {
+        h += '<div class="' + (k === 'day' ? 'col-day' : '') + '">' + (P[k] ? fn(P[k], k) : '<span class="unknown">？</span>') + '</div>';
+      });
     };
     row('十神', function (p) { return '<span class="god' + (p.tenGod === '日主' ? ' self' : '') + '">' + p.tenGod + '</span>'; });
     row('天干', function (p) { return '<div class="glyph e-' + p.stemElement + '">' + p.stem + '<small>' + p.stemElement + '</small></div>'; });
@@ -831,6 +857,15 @@
     h += '</tbody></table></div><p class="legend">歲數為實歲。十神以日主為準：前者看流年天干，後者看地支本氣。「較順／平穩／起伏較大」依流年五行喜忌與沖合刑害加減計分，只是粗略參考。</p></div>';
     $('out').innerHTML = h;
     bindCurve(A.curve);
+    Array.prototype.forEach.call(document.querySelectorAll('.pick-hour'), function (b) {
+      b.addEventListener('click', function () {
+        $('unk').checked = false; syncUnknown();
+        $('time').value = b.dataset.time;
+        run();
+        $('f').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        status('已改用 ' + b.dataset.time + '（' + b.closest('tr').querySelector('b').textContent + '）排盤', 'ok');
+      });
+    });
     markTerms($('out'));
   }
 
@@ -927,6 +962,8 @@
     if (lunar) solarToLunarFields();
   }
   $('cal').addEventListener('change', syncCal);
+  function syncUnknown() { $('time').disabled = $('unk').checked; }
+  $('unk').addEventListener('change', syncUnknown);
   $('lYear').addEventListener('change', function () { fillLunarMonths(+$('lYear').value); fillLunarDays(); lunarToSolar(); });
   $('lMonth').addEventListener('change', function () { fillLunarDays(); lunarToSolar(); });
   $('lDay').addEventListener('change', lunarToSolar);
@@ -939,6 +976,7 @@
     lastOk = false;
     if ($('cal').value === 'lunar' && !lunarToSolar()) { err.textContent = $('lunarNote').textContent + '，請確認農曆日期。'; err.hidden = false; return; }
     var d = $('date').value, t = $('time').value;
+    if ($('unk').checked) t = t || '12:00';
     if (!d || !t) { err.textContent = '請填入出生日期與時間。'; err.hidden = false; return; }
     try {
       render(Bazi.calculate(inputFromState(formState())));
@@ -978,18 +1016,20 @@
     return {
       name: $('name').value.trim(), date: $('date').value, time: $('time').value,
       gender: $('gender').value, city: $('city').value, tz: $('tz').value, lng: $('lng').value, zi: $('zi').checked,
+      unknownHour: $('unk').checked,
       savedAt: Date.now()
     };
   }
   // 表單或已存命盤 → calculate() 的輸入
   function inputFromState(c) {
-    var dp = c.date.split('-').map(Number), tp = c.time.split(':').map(Number);
+    var dp = c.date.split('-').map(Number), tp = (c.time || '12:00').split(':').map(Number);
     var city = c.city && BaziCities.get(c.city);
     return {
       year: dp[0], month: dp[1], day: dp[2], hour: tp[0], minute: tp[1] || 0,
       gender: c.gender, timezone: +c.tz, timeZone: city ? city.zone : null,
       longitude: c.lng === '' || c.lng == null ? null : +c.lng,
-      lateZiNextDay: !c.zi
+      lateZiNextDay: !c.zi,
+      unknownHour: !!c.unknownHour
     };
   }
 
@@ -998,6 +1038,7 @@
     $('date').value = c.date; $('time').value = c.time;
     $('gender').value = c.gender; $('tz').value = String(c.tz);
     $('lng').value = c.lng == null ? '' : c.lng; $('zi').checked = !!c.zi;
+    $('unk').checked = !!c.unknownHour; syncUnknown();
     // 舊版儲存的命盤沒有出生地，視為手動輸入
     $('city').value = c.city && BaziCities.get(c.city) ? c.city : 'custom';
     syncCity(false);

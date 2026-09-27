@@ -261,7 +261,9 @@
    */
   function calculate(input) {
     var y = +input.year, mo = +input.month, d = +input.day;
-    var h = +(input.hour || 0), mi = +(input.minute || 0);
+    var unknownHour = !!input.unknownHour;
+    // 不知道時辰時以正午計算年、月、日柱，時柱留空
+    var h = unknownHour ? 12 : +(input.hour || 0), mi = unknownHour ? 0 : +(input.minute || 0);
     var lateZiNextDay = input.lateZiNextDay !== false;
     var zone = null;
     var tz = input.timezone == null || input.timezone === '' ? 8 : +input.timezone;
@@ -318,6 +320,7 @@
       hour: makePillar(hourIdx, dayStem)
     };
     pillars.day.tenGod = '日主';
+    if (unknownHour) pillars.hour = null;
 
     // 前後兩個「節」
     var prevTarget = 315 + monthOffset * 30;
@@ -335,6 +338,7 @@
     ELEMENTS.forEach(function (e) { counts[e] = 0; countsHidden[e] = 0; });
     ['year', 'month', 'day', 'hour'].forEach(function (k) {
       var p = pillars[k];
+      if (!p) return;
       counts[p.stemElement]++;
       counts[p.branchElement]++;
       countsHidden[p.stemElement]++;
@@ -344,6 +348,7 @@
     var result = {
       input: { year: y, month: mo, day: d, hour: h, minute: mi, timezone: tz, gender: input.gender || null },
       zone: zone,
+      unknownHour: unknownHour,
       solarTime: solarTime,
       sunLongitude: lambda,
       pillars: pillars,

@@ -18,7 +18,11 @@
   var BRANCH_EL = [4, 2, 0, 0, 2, 1, 1, 2, 3, 3, 2, 4];
   var HIDDEN = [[9], [5, 9, 7], [0, 2, 4], [1], [4, 1, 9], [2, 4, 6], [3, 5], [5, 3, 1], [6, 8, 4], [7], [4, 7, 3], [8, 0]];
   var HIDDEN_WEIGHT = { 1: [1], 2: [0.7, 0.3], 3: [0.6, 0.3, 0.1] };
-  var POS = ['year', 'month', 'day', 'hour'];
+  var POS_ALL = ['year', 'month', 'day', 'hour'];
+  // 不知道時辰時沒有時柱，所有分析只看年、月、日三柱
+  var POS = POS_ALL;
+  function posOf(r) { return r.pillars.hour ? POS_ALL : ['year', 'month', 'day']; }
+  function stemPosOf(r) { return r.pillars.hour ? ['year', 'month', 'hour'] : ['year', 'month']; }
   var POS_NAME = { year: '年', month: '月', day: '日', hour: '時' };
 
   function mod(n, m) { return ((n % m) + m) % m; }
@@ -99,7 +103,7 @@
   }
 
   function chartItems(r) {
-    return POS.map(function (k) {
+    return posOf(r).map(function (k) {
       return { label: POS_NAME[k], stem: r.pillars[k].stemIndex, branch: r.pillars[k].branchIndex };
     });
   }
@@ -118,7 +122,7 @@
     var yb = P.year.branchIndex, db = P.day.branchIndex;
     var res = { year: [], month: [], day: [], hour: [] };
     var hongluan = mod(3 - yb, 12), tianxi = mod(hongluan + 6, 12);
-    POS.forEach(function (k) {
+    posOf(r).forEach(function (k) {
       var b = P[k].branchIndex, list = res[k];
       if (TIANYI[dayStem].indexOf(b) >= 0 || TIANYI[yearStem].indexOf(b) >= 0) list.push('天乙貴人');
       if (WENCHANG[dayStem] === b) list.push('文昌');
@@ -172,8 +176,8 @@
     var byElement = [0, 0, 0, 0, 0];
     var add = function (el, w) { byElement[el] += w; score.total += w; if (supports(el)) score.support += w; };
 
-    ['year', 'month', 'hour'].forEach(function (k) { add(STEM_EL[P[k].stemIndex], 1); });
-    POS.forEach(function (k) {
+    stemPosOf(r).forEach(function (k) { add(STEM_EL[P[k].stemIndex], 1); });
+    posOf(r).forEach(function (k) {
       var h = HIDDEN[P[k].branchIndex], ws = HIDDEN_WEIGHT[h.length];
       var bw = k === 'month' ? 3 : 1.2; // 月令最重
       h.forEach(function (s, i) { add(STEM_EL[s], bw * ws[i]); });
@@ -181,10 +185,10 @@
 
     var monthMain = BRANCH_EL[P.month.branchIndex];
     var deLing = supports(monthMain);
-    var roots = POS.filter(function (k) {
+    var roots = posOf(r).filter(function (k) {
       return HIDDEN[P[k].branchIndex].some(function (s) { return STEM_EL[s] === de; });
     }).map(function (k) { return POS_NAME[k] + '支' + P[k].branch; });
-    var helpers = ['year', 'month', 'hour'].filter(function (k) { return supports(STEM_EL[P[k].stemIndex]); });
+    var helpers = stemPosOf(r).filter(function (k) { return supports(STEM_EL[P[k].stemIndex]); });
     var deShi = helpers.length >= 2;
 
     var ratio = score.support / score.total;
@@ -206,7 +210,7 @@
     favorable.sort(function (a, b) { return byElement[a] - byElement[b]; });
 
     // 格局：從格會推翻扶抑的喜忌
-    var strongRoots = POS.filter(function (k) {
+    var strongRoots = posOf(r).filter(function (k) {
       var h = HIDDEN[P[k].branchIndex];
       return STEM_EL[h[0]] === de || (h.length > 1 && STEM_EL[h[1]] === de);
     });
@@ -275,7 +279,7 @@
       };
     }
     // 從弱：日主極弱、無本氣中氣之根、天干無印比相助
-    var stemHelp = ['year', 'month', 'hour'].some(function (x) {
+    var stemHelp = stemPosOf(r).some(function (x) {
       var e = STEM_EL[P[x].stemIndex];
       return e === k.de || e === k.resource;
     });
@@ -294,7 +298,7 @@
 
     // 正格：月令為日主祿、刃者為建祿格、月刃格；否則以月令藏干取格，透出天干者優先，比劫不取
     var hidden = HIDDEN[mb];
-    var stems = ['year', 'month', 'hour'].map(function (x) { return P[x].stemIndex; });
+    var stems = stemPosOf(r).map(function (x) { return P[x].stemIndex; });
     var name, chosen = null, tou = false, god;
     if (LU[ds] === mb) { name = '建祿格'; chosen = hidden[0]; }
     else if (YANGREN[ds] === mb) { name = '月刃格'; chosen = hidden[0]; }
@@ -334,8 +338,8 @@
   function tenGodSummary(r) {
     var counts = {};
     Object.keys(TEN_GOD_NOTES).forEach(function (g) { counts[g] = 0; });
-    ['year', 'month', 'hour'].forEach(function (k) { counts[r.pillars[k].tenGod] += 1; });
-    POS.forEach(function (k) {
+    stemPosOf(r).forEach(function (k) { counts[r.pillars[k].tenGod] += 1; });
+    posOf(r).forEach(function (k) {
       var hs = r.pillars[k].hiddenStems;
       counts[hs[0].tenGod] += 1; // 地支本氣
       for (var i = 1; i < hs.length; i++) counts[hs[i].tenGod] += 0.5; // 中氣、餘氣半計
@@ -430,7 +434,7 @@
     top.forEach(function (x) { traits.push('命中' + x.g.name + '較旺（' + x.count + '），' + x.g.trait + '。'); });
 
     var allSs = [];
-    POS.forEach(function (k) { ss[k].forEach(function (n) { if (allSs.indexOf(n) < 0) allSs.push(n); }); });
+    POS_ALL.forEach(function (k) { ss[k].forEach(function (n) { if (allSs.indexOf(n) < 0) allSs.push(n); }); });
     var ssTraits = allSs.filter(function (n) { return SHENSHA_PROFILE[n]; }).map(function (n) { return n + '：' + SHENSHA_PROFILE[n].trait; });
 
     var blind = base.blind.concat(top.map(function (x) { return x.g.blind; }));
@@ -861,12 +865,32 @@
     return {
       mode: mode, score: score, verdict: verdict, items: items, roles: roles, advice: advice,
       names: [nA, nB],
-      a: { pillars: [pa.year.name, pa.month.name, pa.day.name, pa.hour.name], favorable: A.strength.favorable, dayMaster: S[da] + E[STEM_EL[da]], zodiac: za },
-      b: { pillars: [pb.year.name, pb.month.name, pb.day.name, pb.hour.name], favorable: Bn.strength.favorable, dayMaster: S[db] + E[STEM_EL[db]], zodiac: zb },
+      a: { pillars: [pa.year.name, pa.month.name, pa.day.name, pa.hour ? pa.hour.name : '？？'], favorable: A.strength.favorable, dayMaster: S[da] + E[STEM_EL[da]], zodiac: za },
+      b: { pillars: [pb.year.name, pb.month.name, pb.day.name, pb.hour ? pb.hour.name : '？？'], favorable: Bn.strength.favorable, dayMaster: S[db] + E[STEM_EL[db]], zodiac: zb },
       note: '合婚比對為傳統命理的參考，兩人相處的關鍵仍在溝通、尊重與經營。'
     };
   }
   Bazi.compare = compare;
+
+  // ---------- 不確定時辰：十二時辰對照 ----------
+  var HOUR_RANGES = ['23–01', '01–03', '03–05', '05–07', '07–09', '09–11', '11–13', '13–15', '15–17', '17–19', '19–21', '21–23'];
+  function hourOptions(input) {
+    return B.map(function (bn, i) {
+      // 取各時辰中間的時刻（子時取 00:30，避免跨日），直接指定時辰，不再做經度或夏令時間換算
+      var inp = Object.assign({}, input, { unknownHour: false, hour: i === 0 ? 0 : i * 2, minute: i === 0 ? 30 : 0, longitude: null, timeZone: null });
+      var r = Bazi.calculate(inp);
+      var a = analyzeCore(r, { annualCount: 1 });
+      var god = r.pillars.hour.tenGod;
+      var group = GOD_GROUPS.filter(function (g) { return g.members.indexOf(god) >= 0; })[0];
+      return {
+        branch: bn, name: bn + '時', range: HOUR_RANGES[i], hour: inp.hour, minute: inp.minute,
+        pillar: r.pillars.hour.name, stemTenGod: god, branchTenGod: r.pillars.hour.hiddenStems[0].tenGod,
+        pattern: a.strength.pattern.name, level: a.strength.level, favorable: a.strength.favorable,
+        hint: '時柱' + god + '：' + TEN_GOD_NOTES[god] + '；' + group.trait
+      };
+    });
+  }
+  Bazi.hourOptions = hourOptions;
 
   function analyze(r, opts) {
     var res = analyzeCore(r, opts);
@@ -882,10 +906,10 @@
     var currentYear = opts.currentYear || new Date().getFullYear();
     var P = r.pillars;
     var stages = {};
-    POS.forEach(function (k) { stages[k] = lifeStage(P.day.stemIndex, P[k].branchIndex); });
+    posOf(r).forEach(function (k) { stages[k] = lifeStage(P.day.stemIndex, P[k].branchIndex); });
 
     var kw = kongwang(P.day.index);
-    var kongPos = ['year', 'month', 'hour'].filter(function (k) { return kw.indexOf(P[k].branchIndex) >= 0; });
+    var kongPos = posOf(r).filter(function (k) { return k !== 'day' && kw.indexOf(P[k].branchIndex) >= 0; });
 
     var taiIdx = Bazi.ganzhiIndex(mod(P.month.stemIndex + 1, 10), mod(P.month.branchIndex + 3, 12));
 

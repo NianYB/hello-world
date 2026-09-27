@@ -205,3 +205,17 @@ test('農曆換算', () => {
   assert.deepStrictEqual([back.year, back.month, back.day, back.leap], [2023, 2, 10, true]);
   assert.throws(() => L.toSolar(2024, 5, 1, true), /沒有閏/);
 });
+
+test('不確定時辰', () => {
+  const r = Bazi.calculate({ year: 1990, month: 5, day: 15, unknownHour: true, gender: 'female' });
+  assert.strictEqual(r.pillars.hour, null);
+  assert.strictEqual(r.unknownHour, true);
+  const a = Bazi.analyze(r, { currentYear: 2026 });
+  assert.ok(!a.lifeStages.hour);
+  assert.deepStrictEqual(a.shensha.hour, []);
+  assert.ok(a.relations.every((x) => x.who.indexOf('時') < 0));
+  const opts = Bazi.hourOptions({ year: 1990, month: 5, day: 15, gender: 'female' });
+  assert.strictEqual(opts.length, 12);
+  assert.deepStrictEqual(opts.map((o) => o.pillar.charAt(1)).join(''), '子丑寅卯辰巳午未申酉戌亥');
+  assert.strictEqual(opts[7].pillar, '癸未'); // 未時，與 14:30 排盤一致
+});

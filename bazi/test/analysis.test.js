@@ -219,3 +219,18 @@ test('不確定時辰', () => {
   assert.deepStrictEqual(opts.map((o) => o.pillar.charAt(1)).join(''), '子丑寅卯辰巳午未申酉戌亥');
   assert.strictEqual(opts[7].pillar, '癸未'); // 未時，與 14:30 排盤一致
 });
+
+test('流月', () => {
+  const a = Bazi.analyze(sample(), { currentYear: 2026, nowJD: Bazi.toJulianDay(2026, 9, 27) });
+  const M = a.months;
+  assert.strictEqual(M.solarYear, 2026);
+  assert.strictEqual(M.months.length, 12);
+  assert.deepStrictEqual(M.months.map((m) => m.name).slice(0, 3), ['庚寅', '辛卯', '壬辰']); // 丙年起庚寅
+  assert.strictEqual(M.months[0].start.month, 2);
+  assert.strictEqual(M.currentIndex, 7); // 9/27 在酉月
+  assert.strictEqual(M.months[7].name, '丁酉');
+  // 立春前仍屬上一個節氣年
+  const b = Bazi.analyze(sample(), { currentYear: 2026, nowJD: Bazi.toJulianDay(2026, 1, 20) });
+  assert.strictEqual(b.months.solarYear, 2025);
+  assert.strictEqual(b.months.currentIndex, 11); // 丑月
+});

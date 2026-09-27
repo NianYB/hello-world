@@ -484,7 +484,8 @@
     '月': { stem: '月干代表父母、兄弟與工作上的助力', branch: '月支是月令，代表父母兄弟與事業舞台、工作環境', short: '事業環境、父母兄弟' },
     '日': { stem: '日干就是命主自己', branch: '日支是夫妻宮，關係到配偶、感情與自身身心', short: '自己、配偶' },
     '時': { stem: '時干代表子女、晚輩與部屬', branch: '時支代表子女、計畫成果與晚年', short: '子女、晚輩、計畫' },
-    '大運': { stem: '大運天干主這十年前五年的外在運勢', branch: '大運地支主這十年後五年的根基運勢', short: '這十年的整體運勢' }
+    '大運': { stem: '大運天干主這十年前五年的外在運勢', branch: '大運地支主這十年後五年的根基運勢', short: '這十年的整體運勢' },
+    '流年': { stem: '流年天干主今年的外在事件', branch: '流年地支主今年的環境與根基', short: '今年的整體運勢' }
   };
   var KIND_TEXT = {
     '合': '合代表牽絆、吸引與合作',
@@ -504,14 +505,16 @@
     '月': '工作、職務或所處環境容易變動，可能換部門、換工作或搬遷',
     '日': '感情、婚姻關係起伏較大，也要注意身體與作息',
     '時': '子女、晚輩或手上的計畫容易有變化',
-    '大運': '與這步大運相衝，運勢轉折感較強，宜穩中求變'
+    '大運': '與這步大運相衝，運勢轉折感較強，宜穩中求變',
+    '流年': '與今年主軸相衝，當月計畫容易變動，重要事項預留彈性'
   };
   var HE_FOCUS = {
     '年': '易得長輩照顧，或與家族事務牽連',
     '月': '工作上有合作機會或貴人牽線，也可能被瑣事牽絆',
     '日': '感情有進展或結緣的機會，已婚者重心放在家庭',
     '時': '與子女、晚輩互動增加，計畫容易談成',
-    '大運': '流年與大運相合，這一年與十年運勢同步，喜忌作用都較明顯'
+    '大運': '流年與大運相合，這一年與十年運勢同步，喜忌作用都較明顯',
+    '流年': '當月與今年主軸相合，事情容易順著全年的方向推進'
   };
   var YEAR_THEME = {
     '比肩': '比肩年，自主意識強，同輩、朋友往來多，宜合作，也要防競爭分財',
@@ -549,7 +552,8 @@
     '月': '想換工作先確定下一步再動；重要合約與職務異動多看一次條文，保留轉圜空間。',
     '日': '與伴侶多溝通、避免冷戰，重大感情決定緩一緩；維持規律作息與運動。',
     '時': '多花時間陪伴子女、晚輩；手上的計畫準備備案，時程留些緩衝。',
-    '大運': '這年不宜孤注一擲，保留現金與退路，重大決定分階段進行。'
+    '大運': '這年不宜孤注一擲，保留現金與退路，重大決定分階段進行。',
+    '流年': '當月行程與預算保留彈性，重要決定避開這個月或多確認一次。'
   };
   var FIX_XING = {
     '無恩之刑': '幫忙量力而為，不替人作保、不借大額款項，人情往來留紀錄。',
@@ -737,6 +741,53 @@
     return out;
   }
 
+  // ---------- 流月 ----------
+  var MONTH_TIP = {
+    '比肩': '適合和夥伴一起推進事情，金錢往來分清楚。',
+    '劫財': '開銷容易增加，暫緩大額消費與借貸。',
+    '食神': '心情放鬆，適合休假、學習或創作。',
+    '傷官': '想法多、表現欲強，說話前多想一下。',
+    '偏財': '人脈與機會活絡，適合談業務、拓展關係。',
+    '正財': '適合處理收入、帳務與穩定累積。',
+    '七殺': '壓力與挑戰較多，照顧好身體，別硬碰硬。',
+    '正官': '適合面對考核、升遷或處理正式文件。',
+    '偏印': '適合研究、進修，留意情緒不要悶著。',
+    '正印': '容易得到長輩、上司幫忙，適合學習與休養。'
+  };
+  function monthlyPillars(r, st, solarYear, luckList) {
+    var ds = r.pillars.day.stemIndex, tz = r.input.timezone;
+    var chart = chartItems(r);
+    var ys = mod(solarYear - 4, 10), yb = mod(solarYear - 4, 12);
+    var luck = (luckList || []).filter(function (L) { return solarYear >= L.startYear && solarYear <= L.endYear; })[0] || null;
+    var lp = luck && r.luckPillars ? r.luckPillars.pillars.filter(function (p) { return p.name === luck.name; })[0] : null;
+    var fav = function (el) { return st.favorable.indexOf(el) >= 0; };
+    var jd = Bazi.findSolarTerm(315, Bazi.toJulianDay(solarYear, 2, 4));
+    var out = [];
+    for (var i = 0; i < 12; i++) {
+      var next = Bazi.findSolarTerm(mod(315 + 30 * (i + 1), 360), jd + 30.4);
+      var s = mod((ys % 5) * 2 + 2 + i, 10), b = mod(i + 2, 12);
+      var items = chart.concat([{ label: '流月', stem: s, branch: b }, { label: '流年', stem: ys, branch: yb }]);
+      if (lp) items.push({ label: '大運', stem: lp.stemIndex, branch: lp.branchIndex });
+      var rel = pairRelations(items).filter(function (x) { return x.who.indexOf('流月') >= 0; });
+      var expl = rel.map(function (x) { return explainRelation(x, st, '流月'); });
+      var stemEl = E[STEM_EL[s]], branchEl = E[BRANCH_EL[b]];
+      var score = (fav(stemEl) ? 1 : -1) + (fav(branchEl) ? 1 : -1);
+      expl.forEach(function (it) { score += it.tone === 'good' ? 0.5 : it.tone === 'bad' ? -0.5 : 0; });
+      var god = Bazi.tenGod(ds, s);
+      var start = Bazi.fromJulianDay(jd + tz / 24), end = Bazi.fromJulianDay(next + tz / 24);
+      out.push({
+        index: i, name: S[s] + B[b], branchName: B[b] + '月', stemElement: stemEl, branchElement: branchEl,
+        start: start, end: end, startJD: jd, endJD: next,
+        stemTenGod: god, branchTenGod: Bazi.tenGod(ds, HIDDEN[b][0]),
+        outlook: score >= 1.5 ? '較順' : score <= -2 ? '起伏較大' : '平穩',
+        summary: '天干' + S[s] + '（' + god + '）' + (fav(stemEl) ? '為喜用' : '為忌') + '，地支' + B[b] + (fav(branchEl) ? '為喜用' : '為忌') + '。' + MONTH_TIP[god],
+        items: expl
+      });
+      jd = next;
+    }
+    return { solarYear: solarYear, yearName: S[ys] + B[yb], months: out };
+  }
+
   // ---------- 流年 ----------
   function annualPillars(r, fromYear, count) {
     var ds = r.pillars.day.stemIndex;
@@ -898,6 +949,13 @@
     var cy = (opts && opts.currentYear) || new Date().getFullYear();
     res.luck = luckDetails(r, res.strength, cy);
     res.curve = fortuneCurve(r, res.strength, (opts && opts.curveYears) || 90);
+    // 流月：以目前所在的節氣年（立春起算）為準
+    var nowJD = (opts && opts.nowJD) || (Date.now() / 86400000 + 2440587.5);
+    var sy = cy;
+    if (nowJD < Bazi.findSolarTerm(315, Bazi.toJulianDay(cy, 2, 4))) sy = cy - 1;
+    res.months = monthlyPillars(r, res.strength, sy, res.luck);
+    res.months.currentIndex = -1;
+    res.months.months.forEach(function (m, i) { if (nowJD >= m.startJD && nowJD < m.endJD) res.months.currentIndex = i; });
     return res;
   }
 

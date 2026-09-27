@@ -68,7 +68,7 @@
   h1 { margin: 0; font: 700 26px/1.2 var(--serif); letter-spacing: .04em; text-wrap: balance; }
   .sub { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
 
-  form {
+  #f {
     background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px;
     display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px 16px; align-items: end;
   }
@@ -309,6 +309,22 @@
   .ly { display: inline-grid; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; }
   .ly b { font-variant-numeric: tabular-nums; }
   .ly small { font-size: 11px; color: var(--muted); }
+  .ask { display: grid; gap: 10px; }
+  .ask h2 { margin: 0; }
+  .ask .note { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chips .chip { font-size: 13px; letter-spacing: 0; min-height: 34px; padding: 0 12px; border-radius: 99px; }
+  .thread { display: grid; gap: 8px; }
+  .bubble { max-width: 90%; padding: 10px 14px; border-radius: 12px; white-space: pre-wrap; line-height: 1.7; font-size: 14.5px; }
+  .bubble.user { justify-self: end; background: var(--seal); color: var(--seal-ink); border-bottom-right-radius: 4px; }
+  .bubble.assistant { justify-self: start; background: var(--card); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+  .bubble.pending { color: var(--muted); }
+  .bubble.note { justify-self: center; font-size: 12.5px; color: var(--muted); padding: 2px 8px; }
+  .ask-form { display: grid; gap: 8px; }
+  .ask-form textarea { font: 15px/1.5 var(--sans); color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; resize: vertical; width: 100%; }
+  .ask-form textarea:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .ask-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ask-actions button { flex: 0 1 auto; padding: 0 18px; }
   .detail .fix { display: block; margin-top: 4px; font-size: 12.5px; color: var(--ink); }
   .detail em, .advice em { font-style: normal; font-weight: 700; font-size: 11px; letter-spacing: .06em; padding: 0 5px; margin-right: 6px; border-radius: 3px; background: var(--seal-soft2); color: var(--seal); }
   .advice { background: var(--paper); border: 1px dashed var(--line); border-radius: 8px; padding: 8px 10px; display: grid; gap: 4px; }
@@ -494,6 +510,26 @@
 
   <section id="out" aria-live="polite"></section>
 
+  <section id="askSec" class="ask" aria-label="問 Claude" hidden>
+    <h2>問 Claude</h2>
+    <p class="note">根據上面這張命盤提問，Claude 會參考命盤資料回答。每次提問會使用你自己的 Claude 額度，第一次使用時會先詢問你是否允許。</p>
+    <div class="chips" id="askChips">
+      <button type="button" class="ghost chip">我明年適合換工作嗎？</button>
+      <button type="button" class="ghost chip">我的財運與理財要注意什麼？</button>
+      <button type="button" class="ghost chip">感情上我該注意什麼？</button>
+      <button type="button" class="ghost chip">今年最需要注意的三件事？</button>
+    </div>
+    <div class="thread" id="askThread"></div>
+    <form id="askForm" class="ask-form">
+      <textarea id="askInput" rows="2" maxlength="500" placeholder="例如：我適合自己創業嗎？"></textarea>
+      <div class="ask-actions">
+        <button type="submit" id="askBtn">送出</button>
+        <button type="button" class="ghost" id="askStop" hidden>停止</button>
+        <button type="button" class="ghost" id="askClear">清除對話</button>
+      </div>
+    </form>
+  </section>
+
   <details>
     <summary>計算說明</summary>
     <p>年柱以立春為界，月柱以十二「節」為界，節氣時刻以 VSOP87 天文演算法求太陽視黃經，誤差約一分鐘。</p>
@@ -675,6 +711,7 @@
     var P = r.pillars, h = '';
     var A = Bazi.analyze(r);
     var ST = A.strength;
+    lastResult = r; lastAnalysis = A;
     var nm = $('name').value.trim();
     h += '<div class="report-head"><b>' + (nm ? esc(nm) : '八字命盤') + '</b><span>國曆 ' + (r.unknownHour ? fmt(r.input).slice(0, 10) + ' 時辰不詳' : fmt(r.input)) + '（' + (cityZone() ? $('city').value + '，' : '') + 'UTC' + (r.input.timezone >= 0 ? '+' : '') + r.input.timezone + '）</span>' +
       lunarText(r.input) +
@@ -1220,6 +1257,101 @@
     }).catch(function () {});
   }
 
+  // ---------- 問 Claude ----------
+  var lastResult = null, lastAnalysis = null;
+  function chartContext() {
+    var r = lastResult, A = lastAnalysis;
+    if (!r || !A) return '';
+    var P = r.pillars, ST = A.strength, cy = new Date().getFullYear();
+    var lines = [];
+    lines.push('命主：' + ($('name').value.trim() || '未填姓名') + '，' + (r.input.gender === 'male' ? '男' : r.input.gender === 'female' ? '女' : '性別未填') +
+      '，國曆 ' + fmt(r.input).slice(0, 10) + (r.unknownHour ? '（時辰不詳）' : ' ' + fmt(r.input).slice(11)) + '，今年 ' + cy + ' 年，約 ' + (cy - r.input.year) + ' 歲。');
+    lines.push('四柱：年 ' + P.year.name + '、月 ' + P.month.name + '、日 ' + P.day.name + '、時 ' + (P.hour ? P.hour.name : '不詳'));
+    lines.push('日主：' + r.dayMaster.stem + '（' + r.dayMaster.yinYang + r.dayMaster.element + '）；格局：' + ST.pattern.name + '（' + ST.pattern.basis + '）');
+    lines.push('強弱：' + ST.level + '（生扶約 ' + Math.round(ST.ratio * 100) + '%）；喜用：' + ST.favorable.join('、') + '；忌：' + ST.unfavorable.join('、') + '；' + ST.reason);
+    lines.push('十神分布：' + Object.keys(A.tenGods.counts).map(function (g) { return g + A.tenGods.counts[g]; }).join('、'));
+    lines.push('干支關係：' + (A.relations.map(function (x) { return x.who.join('') + x.text; }).join('、') || '無'));
+    var ss = []; KEYS.forEach(function (k) { (A.shensha[k] || []).forEach(function (x) { ss.push(HEADS[KEYS.indexOf(k)] + x); }); });
+    lines.push('神煞：' + (ss.join('、') || '無') + '；空亡：' + A.kongwang.branches.join(''));
+    lines.push('命盤總覽：' + A.profile.title + '；' + A.profile.traits.join(' ') + ' 工作建議：' + A.profile.careers.map(function (c) { return c.title + '（' + c.jobs + '）'; }).join('；'));
+    if (A.luck) lines.push('大運：' + A.luck.map(function (L) { return L.startAge + '歲' + L.name + '（' + L.outlook + (L.current ? '，目前' : '') + '）'; }).join('、'));
+    var cur = A.luck && A.luck.filter(function (L) { return L.current; })[0];
+    if (cur) lines.push('目前大運：' + cur.summary);
+    A.annual.slice(0, 3).forEach(function (y) {
+      lines.push(y.year + ' 年流年 ' + y.name + '（' + y.detail.outlook + '）：' + y.detail.summary + ' 互動：' + (y.detail.items.map(function (i) { return i.tag; }).join('、') || '無'));
+    });
+    lines.push('感情：' + A.family.love.points.join(' ') + ' 感情機會年份：' + A.family.love.years.map(function (y) { return y.year; }).join('、'));
+    return lines.join('\n');
+  }
+  var ASK_RULES = '你是熟悉子平八字的命理顧問。以下是使用者的命盤資料（由排盤程式計算），請只根據這些資料，用繁體中文回答使用者的問題。\n' +
+    '規則：1. 引用命盤中的具體依據（例如喜用神、流年、大運、十神），不要編造資料中沒有的內容。2. 以「傾向」表述，不要斷言命運，並給出具體可行的建議。' +
+    '3. 涉及健康、法律、投資等重大決定時，提醒以專業意見為準。4. 回答在 350 字以內，用純文字與「・」條列，不要使用 Markdown 符號。\n\n【命盤資料】\n';
+  var askTurns = [], askCtl = null, askKey = '', askBlocked = false;
+  var ASK_ERRORS = {
+    not_granted: '你沒有允許這個頁面使用 Claude，所以無法回答。重新整理頁面後可再選擇允許。',
+    rate_limited: '提問太頻繁了，請稍等一下再試。',
+    queue_overflow: '提問太頻繁了，請稍等一下再試。',
+    prompt_too_large: '問題或對話太長了，請清除對話後再問。',
+    refused: 'Claude 無法回答這個問題，請換個方式提問。',
+    empty_completion: 'Claude 沒有產生回答，請再試一次。',
+    session_expired: '登入已過期，請重新整理頁面。',
+    sampling_disabled: '目前無法使用這個功能。'
+  };
+  function bubble(role, text) {
+    var d = document.createElement('div');
+    d.className = 'bubble ' + role;
+    d.textContent = text;
+    $('askThread').appendChild(d);
+    return d;
+  }
+  function currentChartKey() { return lastResult ? JSON.stringify(lastResult.input) + (lastResult.unknownHour ? 'u' : '') : ''; }
+  function initAsk() {
+    if (!window.claude || !window.claude.use) return;
+    window.claude.use('sample').then(function (sample) {
+      if (!sample) return;
+      $('askSec').hidden = false;
+      function ask(q) {
+        q = q.trim();
+        if (!q || askCtl) return;
+        if (!lastResult) { status('請先排盤再提問。', 'bad'); return; }
+        var key = currentChartKey();
+        if (key !== askKey) { askTurns = []; $('askThread').textContent = ''; askKey = key; }
+        bubble('user', q);
+        var ans = bubble('assistant', '思考中…');
+        ans.classList.add('pending');
+        askTurns.push({ role: 'user', content: q });
+        askCtl = new AbortController();
+        $('askBtn').disabled = true; $('askStop').hidden = false; $('askInput').value = '';
+        sample([{ role: 'user', content: ASK_RULES + chartContext() }].concat(askTurns), {
+          signal: askCtl.signal, cache: false,
+          onText: function (e) { ans.classList.remove('pending'); ans.textContent = e.text; }
+        }).then(function (res) {
+          ans.classList.remove('pending');
+          ans.textContent = res.text;
+          askTurns.push({ role: 'assistant', content: res.text });
+          if (res.truncated) bubble('note', '回答被截斷了，可以請 Claude 繼續說。');
+        }, function (e) {
+          ans.classList.remove('pending');
+          askTurns.pop();
+          if (e && e.text) ans.textContent = e.text; else ans.remove();
+          if (!e || e.code !== 'cancelled') bubble('note', (e && ASK_ERRORS[e.code]) || '暫時無法取得回答，請稍後再試。');
+          if (e && (e.code === 'not_granted' || e.code === 'sampling_disabled')) askBlocked = true;
+        }).then(function () {
+          askCtl = null;
+          $('askStop').hidden = true;
+          $('askBtn').disabled = askBlocked;
+          $('askThread').lastChild && $('askThread').lastChild.scrollIntoView({ block: 'nearest' });
+        });
+      }
+      $('askForm').addEventListener('submit', function (e) { e.preventDefault(); ask($('askInput').value); });
+      $('askStop').addEventListener('click', function () { if (askCtl) askCtl.abort(); });
+      $('askClear').addEventListener('click', function () { askTurns = []; $('askThread').textContent = ''; });
+      Array.prototype.forEach.call(document.querySelectorAll('#askChips .chip'), function (b) {
+        b.addEventListener('click', function () { ask(b.textContent); });
+      });
+    }).catch(function () {});
+  }
+
   // ---------- 合婚／合夥比對 ----------
   function stateFor(id) {
     if (id === '__form') return formState();
@@ -1395,5 +1527,6 @@
   run();
   renderSaved();
   connectAccount();
+  initAsk();
 })();
 </script>

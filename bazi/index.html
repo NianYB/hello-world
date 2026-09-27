@@ -243,6 +243,21 @@
   .luck-detail .ld-now { font-size: 12px; font-weight: 700; color: var(--seal); }
   .luck-detail .ld-years { margin-left: auto; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
   .luck-detail .detail { padding: 0 14px 14px; }
+  #cmpSec { display: grid; gap: 10px; }
+  #cmpSec h2 { margin: 0; }
+  .cmp-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px 16px; align-items: end; }
+  .cmp-head { display: flex; align-items: center; gap: 16px; }
+  .cmp-score { display: flex; align-items: baseline; gap: 4px; }
+  .cmp-score strong { font: 900 48px/1 var(--serif); color: var(--seal); font-variant-numeric: tabular-nums; }
+  .cmp-score span { color: var(--muted); font-size: 13px; }
+  .cmp-verdict { font: 700 20px var(--serif); }
+  .cmp-head .note { margin: 2px 0 0; }
+  .cmp-people { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+  .cmp-people > div { display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+  .cmp-gz { font: 700 18px var(--serif); letter-spacing: .08em; }
+  .cmp-items li { align-items: start; }
+  .k-中 { background: var(--metal); } .k-吉 { background: var(--wood); } .k-忌 { background: var(--fire); }
+  .cmp-roles p { margin: 0 0 6px; }
   .detail .fix { display: block; margin-top: 4px; font-size: 12.5px; color: var(--ink); }
   .detail em, .advice em { font-style: normal; font-weight: 700; font-size: 11px; letter-spacing: .06em; padding: 0 5px; margin-right: 6px; border-radius: 3px; background: var(--seal-soft2); color: var(--seal); }
   .advice { background: var(--paper); border: 1px dashed var(--line); border-radius: 8px; padding: 8px 10px; display: grid; gap: 4px; }
@@ -394,6 +409,20 @@
     <div class="saved-head"><h2>我的命盤</h2><small id="storeNote">存在這個瀏覽器</small></div>
     <ul class="saved" id="savedList"></ul>
     <p class="note" id="savedEmpty">還沒有儲存的命盤。排好盤後按「儲存命盤」，之後可在這裡一鍵開啟。</p>
+  </section>
+
+  <section id="cmpSec" aria-label="兩人比對">
+    <h2>合婚／合夥比對</h2>
+    <div class="cmp-form">
+      <label>第一位<select id="cmpA"></select></label>
+      <label>第二位<select id="cmpB"></select></label>
+      <label>比對類型
+        <select id="cmpMode"><option value="love">感情／婚姻</option><option value="partner">事業合夥</option></select>
+      </label>
+      <button type="button" id="cmpBtn">比對</button>
+    </div>
+    <p class="note" id="cmpHint">先把兩個人的命盤存到「我的命盤」，或用「目前表單」加上一張已存的命盤來比對。</p>
+    <div id="cmpOut" aria-live="polite"></div>
   </section>
 
   <section id="out" aria-live="polite"></section>
@@ -741,15 +770,8 @@
     lastOk = false;
     var d = $('date').value, t = $('time').value;
     if (!d || !t) { err.textContent = '請填入出生日期與時間。'; err.hidden = false; return; }
-    var dp = d.split('-').map(Number), tp = t.split(':').map(Number);
     try {
-      render(Bazi.calculate({
-        year: dp[0], month: dp[1], day: dp[2], hour: tp[0], minute: tp[1],
-        gender: $('gender').value, timezone: +$('tz').value,
-        timeZone: cityZone(),
-        longitude: $('lng').value === '' ? null : +$('lng').value,
-        lateZiNextDay: !$('zi').checked
-      }));
+      render(Bazi.calculate(inputFromState(formState())));
       lastOk = true;
     } catch (ex) {
       err.textContent = ex.message + '，請確認輸入。';
@@ -789,6 +811,18 @@
       savedAt: Date.now()
     };
   }
+  // 表單或已存命盤 → calculate() 的輸入
+  function inputFromState(c) {
+    var dp = c.date.split('-').map(Number), tp = c.time.split(':').map(Number);
+    var city = c.city && BaziCities.get(c.city);
+    return {
+      year: dp[0], month: dp[1], day: dp[2], hour: tp[0], minute: tp[1] || 0,
+      gender: c.gender, timezone: +c.tz, timeZone: city ? city.zone : null,
+      longitude: c.lng === '' || c.lng == null ? null : +c.lng,
+      lateZiNextDay: !c.zi
+    };
+  }
+
   function applyState(c) {
     $('name').value = c.name || '';
     $('date').value = c.date; $('time').value = c.time;
@@ -802,8 +836,27 @@
     return c.name || (c.date + ' ' + (c.gender === 'male' ? '男' : '女'));
   }
 
+  function fillCompare(list) {
+    ['cmpA', 'cmpB'].forEach(function (id, n) {
+      var sel = $(id), prev = sel.value;
+      sel.textContent = '';
+      var cur = document.createElement('option');
+      cur.value = '__form'; cur.textContent = '目前表單' + ($('name').value.trim() ? '（' + $('name').value.trim() + '）' : '');
+      sel.appendChild(cur);
+      list.forEach(function (c) {
+        var o = document.createElement('option');
+        o.value = c.id; o.textContent = label(c) + '・' + c.date;
+        sel.appendChild(o);
+      });
+      if (prev && Array.prototype.some.call(sel.options, function (o) { return o.value === prev; })) sel.value = prev;
+      else if (n === 1 && list.length) sel.value = list[0].id;
+    });
+    $('cmpHint').hidden = list.length > 0;
+  }
+
   function renderSaved() {
     var list = charts.slice().sort(function (a, b) { return (b.savedAt || 0) - (a.savedAt || 0); });
+    fillCompare(list);
     $('savedEmpty').hidden = list.length > 0;
     var ul = $('savedList');
     ul.textContent = '';
@@ -901,6 +954,42 @@
       });
     }).catch(function () {});
   }
+
+  // ---------- 合婚／合夥比對 ----------
+  function stateFor(id) {
+    if (id === '__form') return formState();
+    return charts.filter(function (c) { return c.id === id; })[0] || null;
+  }
+  function runCompare() {
+    var out = $('cmpOut');
+    var sa = stateFor($('cmpA').value), sb = stateFor($('cmpB').value);
+    if (!sa || !sb) { out.innerHTML = '<p class="error">請選擇兩位要比對的人。</p>'; return; }
+    if ($('cmpA').value === $('cmpB').value) { out.innerHTML = '<p class="error">請選擇兩個不同的命盤。</p>'; return; }
+    var res;
+    try {
+      res = Bazi.compare(Bazi.calculate(inputFromState(sa)), Bazi.calculate(inputFromState(sb)), {
+        mode: $('cmpMode').value, names: [label(sa), label(sb)]
+      });
+    } catch (e) { out.innerHTML = '<p class="error">' + esc(e.message) + '</p>'; return; }
+    var tone = { good: '吉', bad: '忌', neutral: '中' };
+    var h = '<div class="panel cmp-result">';
+    h += '<div class="cmp-head"><div class="cmp-score"><strong>' + res.score + '</strong><span>/ 100</span></div><div><b class="cmp-verdict">' + res.verdict + '</b>' +
+      '<p class="note">' + (res.mode === 'love' ? '感情／婚姻' : '事業合夥') + '比對</p></div></div>';
+    h += '<div class="cmp-people">' + [['a', 0], ['b', 1]].map(function (x) {
+      var p = res[x[0]];
+      return '<div><b>' + esc(res.names[x[1]]) + '</b><span class="cmp-gz">' + p.pillars.join(' ') + '</span>' +
+        '<span class="note">日主 ' + p.dayMaster + '・屬' + p.zodiac + '・喜用 ' + p.favorable.join('、') + '</span></div>';
+    }).join('') + '</div>';
+    h += '<ul class="rel-list cmp-items">' + res.items.map(function (it) {
+      return '<li><span class="kind k-' + tone[it.tone] + '">' + tone[it.tone] + '</span><span><b>' + esc(it.title) + '</b><br>' + esc(it.text) + '</span></li>';
+    }).join('') + '</ul>';
+    h += '<div class="cmp-roles">' + res.roles.map(function (r) { return '<p><b>' + esc(r.who) + '</b>：' + esc(r.text) + '。</p>'; }).join('') + '</div>';
+    h += '<div class="advice"><p><em>相處建議</em></p><ol>' + res.advice.map(function (a) { return '<li>' + esc(a) + '</li>'; }).join('') + '</ol></div>';
+    h += '<p class="note">' + res.note + '</p></div>';
+    out.innerHTML = h;
+  }
+  $('cmpBtn').addEventListener('click', runCompare);
+  $('name').addEventListener('input', function () { fillCompare(charts.slice().sort(function (a, b) { return (b.savedAt || 0) - (a.savedAt || 0); })); });
 
   // ---------- 匯出 PDF ----------
   var LIBS = [

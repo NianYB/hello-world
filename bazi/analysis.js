@@ -770,6 +770,104 @@
 
   Bazi.PATTERN_NOTES = PATTERN_NOTES;
 
+  // ---------- 合婚／合夥比對 ----------
+  var ROLE_TEXT = {
+    '比肩': { love: '對方像朋友、同伴，關係平等、有共同語言，但兩人都有主見，容易各持己見', partner: '對方是實力相當的夥伴，適合分工合作，需事先談好權責與分配' },
+    '劫財': { love: '彼此有競爭感，相處有火花也容易較勁，金錢觀要溝通清楚', partner: '對方有衝勁但也可能分走資源，合夥宜白紙黑字、帳目分明' },
+    '食神': { love: '你會想照顧、寵愛對方，相處輕鬆愉快', partner: '你能帶給對方想法與輸出，合作氣氛融洽，適合創意型合作' },
+    '傷官': { love: '你容易看不慣對方或想改變對方，說話要多留餘地', partner: '你對對方的做法常有意見，適合各管一塊，避免在同一件事上拉扯' },
+    '偏財': { love: '你被對方吸引、願意付出，對方能帶來新鮮感', partner: '對方是你的機會與資源，能帶來業務與人脈' },
+    '正財': { love: '對方在你命中是穩定的伴侶型，你重視且願意負責（傳統為男命妻星）', partner: '對方能帶來穩定的收益，適合長期合作' },
+    '七殺': { love: '對方對你有強烈的吸引與壓力，關係激烈，需要互相尊重界線', partner: '對方強勢、會推著你前進，也可能讓你有壓力' },
+    '正官': { love: '對方在你命中是可依靠的伴侶型，給你安全感與規範（傳統為女命夫星）', partner: '對方有管理與規劃能力，適合由對方主導制度' },
+    '偏印': { love: '對方能理解你獨特的想法，但相處可能少了些熱度', partner: '對方提供專業與點子，但執行面要另外補強' },
+    '正印': { love: '對方像貴人一樣照顧你、包容你', partner: '對方是你的後盾與導師，能給支持與資源' }
+  };
+
+  function compare(ra, rb, opts) {
+    var mode = (opts && opts.mode) === 'partner' ? 'partner' : 'love';
+    var nA = (opts && opts.names && opts.names[0]) || '甲方', nB = (opts && opts.names && opts.names[1]) || '乙方';
+    var A = analyzeCore(ra, { annualCount: 1 }), Bn = analyzeCore(rb, { annualCount: 1 });
+    var pa = ra.pillars, pb = rb.pillars;
+    var items = [], score = 60;
+    var push = function (tone, title, text, delta) { items.push({ tone: tone, title: title, text: text }); score += delta; };
+
+    // 日干
+    var da = pa.day.stemIndex, db = pb.day.stemIndex;
+    if (STEM_HE[key(da, db)]) push('good', '日干相合：' + S[da] + S[db] + '合', '兩人的本性互相吸引，容易一拍即合，是傳統上很好的配對訊號。', 12);
+    else if (Math.abs(da - db) === 6) push('bad', '日干相沖：' + S[da] + S[db] + '沖', '兩人的處事方式正好相反，容易意見相左，需要多一點包容與溝通。', -10);
+    else if (STEM_EL[da] === STEM_EL[db]) push('neutral', '日主同五行：' + E[STEM_EL[da]], '兩人個性相近、容易理解彼此，但也可能缺少互補。', 2);
+
+    // 日支（夫妻宮）
+    var ba = pa.day.branchIndex, bb = pb.day.branchIndex, kb = key(ba, bb);
+    var place = mode === 'love' ? '夫妻宮' : '日支';
+    if (BRANCH_LIUHE[kb]) push('good', place + '六合：' + B[ba] + B[bb] + '合', mode === 'love' ? '兩人的配偶宮相合，生活上容易磨合、有默契。' : '兩人做事節奏合拍，容易培養默契。', 10);
+    SANHE.forEach(function (g) {
+      if (ba !== bb && [g[0], g[1], g[2]].indexOf(ba) >= 0 && [g[0], g[1], g[2]].indexOf(bb) >= 0) {
+        push('good', place + '三合：' + B[ba] + B[bb] + '（' + g[3] + '局）', '兩人目標與價值觀容易一致，能同心協力。', 6);
+      }
+    });
+    if (Math.abs(ba - bb) === 6) push('bad', place + '相沖：' + B[ba] + B[bb] + '沖', mode === 'love' ? '生活習慣與步調差異大，同住容易摩擦，需要各自保留空間。' : '工作節奏不同，容易在執行細節上起衝突。', -10);
+    if (XING_PAIRS[kb] || (ba === bb && ZIXING.indexOf(ba) >= 0)) push('bad', place + '相刑：' + B[ba] + B[bb], '相處容易互相挑剔、產生內耗，吵架時先暫停再談。', -6);
+    if (HAI.indexOf(kb) >= 0) push('bad', place + '相害：' + B[ba] + B[bb] + '害', '容易有誤會或心結，重要的事要說清楚、不要悶著。', -5);
+
+    // 年支（生肖）
+    var ya = pa.year.branchIndex, yb = pb.year.branchIndex, ky = key(ya, yb);
+    var za = Bazi.ZODIAC[ya], zb = Bazi.ZODIAC[yb];
+    if (BRANCH_LIUHE[ky]) push('good', '生肖六合：' + za + '與' + zb, '兩人的家庭背景與原生環境容易相融。', 5);
+    else if (SANHE.some(function (g) { return ya !== yb && [g[0], g[1], g[2]].indexOf(ya) >= 0 && [g[0], g[1], g[2]].indexOf(yb) >= 0; })) push('good', '生肖三合：' + za + '與' + zb, '傳統認為三合生肖相處融洽、容易互助。', 4);
+    if (Math.abs(ya - yb) === 6) push('bad', '生肖相沖：' + za + '與' + zb, '傳統上稱「對沖」，雙方家庭或成長背景差異較大，需多互相體諒。', -5);
+    if (HAI.indexOf(ky) >= 0) push('bad', '生肖相害：' + za + '與' + zb, '容易因小事產生誤會，多直接溝通。', -3);
+
+    // 五行互補：對方命中是否帶自己的喜用
+    var help = function (from, to) {
+      var w = from.strength.elementWeights, total = 0, hit = 0;
+      Object.keys(w).forEach(function (e) { total += w[e]; if (to.strength.favorable.indexOf(e) >= 0) hit += w[e]; });
+      return total ? hit / total : 0;
+    };
+    var bHelpsA = help(Bn, A), aHelpsB = help(A, Bn);
+    var pct = function (v) { return Math.round(v * 100) + '%'; };
+    [[bHelpsA, nB + '補' + nA, A], [aHelpsB, nA + '補' + nB, Bn]].forEach(function (x) {
+      var v = x[0];
+      if (v >= 0.5) push('good', '五行互補（' + x[1] + '）：' + pct(v), '對方命中有 ' + pct(v) + ' 是你的喜用（' + x[2].strength.favorable.join('、') + '），和對方相處容易感到被支持。', 8);
+      else if (v <= 0.3) push('bad', '五行互補（' + x[1] + '）：' + pct(v), '對方命中多為你的忌神，相處時容易覺得耗能，需要刻意經營互補。', -6);
+      else push('neutral', '五行互補（' + x[1] + '）：' + pct(v), '對方能提供部分你需要的五行，互補程度中等。', 0);
+    });
+
+    // 十神角色
+    var roleAB = Bazi.tenGod(da, db), roleBA = Bazi.tenGod(db, da);
+    var roles = [
+      { who: '對' + nA + '而言，' + nB + '是「' + roleAB + '」', text: ROLE_TEXT[roleAB][mode] },
+      { who: '對' + nB + '而言，' + nA + '是「' + roleBA + '」', text: ROLE_TEXT[roleBA][mode] }
+    ];
+    if (mode === 'love') {
+      var male = ra.input.gender === 'male' ? 'a' : rb.input.gender === 'male' ? 'b' : null;
+      var female = ra.input.gender === 'female' ? 'a' : rb.input.gender === 'female' ? 'b' : null;
+      if (male && female && male !== female) {
+        var mg = male === 'a' ? roleAB : roleBA, fg = female === 'a' ? roleAB : roleBA;
+        if (mg === '正財' || mg === '偏財') push('good', '男命見妻星', '女方日干正是男方命中的財星（妻星），傳統上視為有夫妻緣。', 5);
+        if (fg === '正官' || fg === '七殺') push('good', '女命見夫星', '男方日干正是女方命中的官殺（夫星），傳統上視為有夫妻緣。', 5);
+      }
+    }
+
+    score = Math.max(20, Math.min(98, Math.round(score)));
+    var verdict = score >= 80 ? '非常契合' : score >= 68 ? '契合度佳' : score >= 55 ? '可以磨合' : '需要多用心';
+    var advice = [];
+    if (items.some(function (i) { return /相沖/.test(i.title); })) advice.push('差異大時先了解對方的出發點，重大決定約好冷靜期再談。');
+    if (items.some(function (i) { return /相刑|相害/.test(i.title); })) advice.push('把期待與不滿說清楚，避免累積心結；吵架時先停下，隔天再談。');
+    if (bHelpsA < 0.35 || aHelpsB < 0.35) advice.push('五行互補不足的一方，可以在共同生活或工作中多安排彼此喜用的活動與環境。');
+    advice.push(mode === 'love' ? '固定安排兩人的時間，經營比命盤更重要。' : '合作前寫清楚分工、出資與退場機制，定期對帳與檢討。');
+
+    return {
+      mode: mode, score: score, verdict: verdict, items: items, roles: roles, advice: advice,
+      names: [nA, nB],
+      a: { pillars: [pa.year.name, pa.month.name, pa.day.name, pa.hour.name], favorable: A.strength.favorable, dayMaster: S[da] + E[STEM_EL[da]], zodiac: za },
+      b: { pillars: [pb.year.name, pb.month.name, pb.day.name, pb.hour.name], favorable: Bn.strength.favorable, dayMaster: S[db] + E[STEM_EL[db]], zodiac: zb },
+      note: '合婚比對為傳統命理的參考，兩人相處的關鍵仍在溝通、尊重與經營。'
+    };
+  }
+  Bazi.compare = compare;
+
   function analyze(r, opts) {
     var res = analyzeCore(r, opts);
     res.profile = profile(r, res.strength, res.tenGods, res.shensha);

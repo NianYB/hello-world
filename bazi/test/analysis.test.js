@@ -161,3 +161,22 @@ test('大運詳解與運勢曲線', () => {
   assert.strictEqual(b.luck, null);
   assert.ok(b.curve.every((p) => p.luck === null));
 });
+
+test('合婚／合夥比對', () => {
+  const a = Bazi.calculate({ year: 1990, month: 5, day: 15, hour: 14, minute: 30, gender: 'female' });
+  const b = Bazi.calculate({ year: 1988, month: 9, day: 3, hour: 8, gender: 'male' });
+  const c = Bazi.compare(a, b, { mode: 'love', names: ['小美', '阿明'] });
+  assert.ok(c.score >= 20 && c.score <= 98);
+  assert.ok(c.items.some((i) => i.title === '夫妻宮六合：辰酉合'));
+  assert.strictEqual(c.roles[0].who, '對小美而言，阿明是「劫財」');
+  assert.ok(c.advice.length >= 1);
+  // 日干五合：甲日與己日
+  const x = Bazi.calculate({ year: 2024, month: 2, day: 20, hour: 12, gender: 'male' });   // 甲寅日
+  const y = Bazi.calculate({ year: 2024, month: 2, day: 25, hour: 12, gender: 'female' }); // 己未日
+  assert.strictEqual(x.pillars.day.stem + y.pillars.day.stem, '甲己');
+  const xy = Bazi.compare(x, y);
+  assert.ok(xy.items.some((i) => /日干相合/.test(i.title)));
+  assert.ok(xy.items.some((i) => i.title === '男命見妻星')); // 己為甲之正財
+  const partner = Bazi.compare(x, y, { mode: 'partner' });
+  assert.ok(partner.items.every((i) => !/夫妻宮/.test(i.title)));
+});

@@ -107,7 +107,7 @@ test('命盤總覽：個人特質與工作建議', () => {
   const a = Bazi.analyze(sample(), { currentYear: 2026 });
   const pf = a.profile;
   assert.strictEqual(pf.title, '剛毅果斷的行動派'); // 庚金
-  assert.match(pf.headline, /^庚金日主・偏強・/);
+  assert.match(pf.headline, /^庚金日主・七殺格・偏強・/);
   assert.strictEqual(pf.groups.length, 5);
   assert.ok(pf.careers.length >= 2);
   assert.ok(pf.careers.some((c) => c.title === '喜用五行的領域' && /教育/.test(c.jobs))); // 喜用木
@@ -116,4 +116,28 @@ test('命盤總覽：個人特質與工作建議', () => {
   const b = Bazi.analyze(Bazi.calculate({ year: 1980, month: 3, day: 20, hour: 17 })).profile;
   assert.match(b.workStyle, /平台或團隊/);
   assert.ok(b.blindSpots.some((t) => /財星少/.test(t)));
+});
+
+test('格局判斷', () => {
+  const pat = (inp) => Bazi.analyze(Bazi.calculate(inp), { annualCount: 1 }).strength;
+  assert.strictEqual(pat({ year: 1990, month: 5, day: 15, hour: 14, minute: 30 }).pattern.name, '七殺格'); // 庚生巳月取丙
+  assert.strictEqual(pat({ year: 1893, month: 12, day: 26, hour: 8 }).pattern.name, '七殺格');            // 丁生子月癸透
+  assert.strictEqual(pat({ year: 1980, month: 3, day: 20, hour: 17 }).pattern.name, '傷官格');            // 壬生卯月
+  // 建祿格：甲日生寅月
+  const jl = Bazi.analyze(Bazi.calculate({ year: 2024, month: 2, day: 20, hour: 12 }), { annualCount: 1 });
+  assert.strictEqual(jl.strength.pattern.name, '建祿格'); // 甲日丙寅月
+  assert.match(jl.strength.pattern.basis, /寅為日主甲之祿/);
+  // 從強：乙木坐三卯、壬癸生身
+  const cq = pat({ year: 1952, month: 3, day: 10, hour: 5 });
+  assert.strictEqual(cq.pattern.name, '從強格');
+  assert.strictEqual(cq.level, '極強');
+  assert.ok(cq.favorable.includes('木') && cq.unfavorable.includes('金'));
+  // 從財：乙木無根、滿盤土火
+  const cc = pat({ year: 1950, month: 1, day: 10, hour: 1 });
+  assert.strictEqual(cc.pattern.name, '從財格');
+  assert.ok(cc.favorable.includes('土') && cc.unfavorable.includes('木'));
+  // 從格的喜忌會帶到流年與五行調和
+  const a = Bazi.analyze(Bazi.calculate({ year: 1950, month: 1, day: 10, hour: 1 }), { currentYear: 2026 });
+  assert.deepStrictEqual(a.remedies.favorable.map((x) => x.element), a.strength.favorable);
+  assert.match(a.profile.headline, /從財格/);
 });

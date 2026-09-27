@@ -205,6 +205,22 @@
     // 依原局該五行力量由少到多排序喜用：越缺越需要
     favorable.sort(function (a, b) { return byElement[a] - byElement[b]; });
 
+    // 格局：從格會推翻扶抑的喜忌
+    var strongRoots = POS.filter(function (k) {
+      var h = HIDDEN[P[k].branchIndex];
+      return STEM_EL[h[0]] === de || (h.length > 1 && STEM_EL[h[1]] === de);
+    });
+    var pattern = detectPattern(r, {
+      ratio: ratio, byElement: byElement, de: de, resource: resource,
+      output: output, wealth: wealth, officer: officer, strongRoots: strongRoots
+    });
+    if (pattern.cong) {
+      favorable = pattern.favorable;
+      unfavorable = pattern.unfavorable;
+      reason = pattern.reason;
+      level = pattern.cong === '從強' ? '極強' : '極弱';
+    }
+
     // 調候：冬生喜火、夏生喜水
     var mb = P.month.branchIndex, climate = null;
     if ([11, 0, 1].indexOf(mb) >= 0) climate = { element: '火', text: '生於冬季（' + P.month.branch + '月），天寒宜火調候' };
@@ -223,7 +239,81 @@
       favorable: favorable.map(function (i) { return E[i]; }),
       unfavorable: unfavorable.map(function (i) { return E[i]; }),
       reason: reason,
-      climate: climate
+      climate: climate,
+      pattern: pattern
+    };
+  }
+
+  // ---------- 格局 ----------
+  var PATTERN_NOTES = {
+    '正官格': { trait: '守規矩、重名譽，做事有分寸，適合在有制度的環境中穩步升遷。', job: '公職、管理、法律、大型企業' },
+    '七殺格': { trait: '有魄力、敢衝敢拚，能在壓力與競爭中闖出名堂，需要適當的約束與節制。', job: '軍警、執法、業務開拓、創業、外科' },
+    '正財格': { trait: '務實勤儉、重視穩定收入，適合按部就班累積財富。', job: '會計、財務、行政、穩定薪資型工作' },
+    '偏財格': { trait: '交際手腕好、對機會敏銳，財來財去，適合經商與業務。', job: '經商、業務、投資、貿易' },
+    '正印格': { trait: '仁慈好學、有涵養，易得長輩提攜，重精神與名譽。', job: '教育、學術、文化、醫療、公益' },
+    '偏印格': { trait: '思維獨特、直覺敏銳，適合鑽研專門技術或偏門學問。', job: '研究、技術專業、玄學、設計、自由業' },
+    '食神格': { trait: '性情溫和、有才藝與口福，懂得享受，以才華謀生。', job: '藝術、餐飲、教學、創作、服務業' },
+    '傷官格': { trait: '聰明外放、才華橫溢、不拘傳統，需注意言語鋒芒。', job: '創意、演藝、律師、技術研發、自媒體' },
+    '建祿格': { trait: '自立自強、靠自己打拚，較少祖蔭，越努力越有成就。', job: '創業、專業技術、業務、自由業' },
+    '月刃格': { trait: '性格剛強、行動力十足，需以官殺制衡，方能成大器。', job: '軍警、運動、外科、工程、需膽識的工作' },
+    '從強格': { trait: '日主之氣專旺，順其旺勢則大發，逆之則多阻。個性自主、意志堅定。', job: '依旺神五行選擇領域，宜自主發揮' },
+    '從財格': { trait: '日主極弱而財星當權，順從財勢，善於理財經商、重實際。', job: '經商、金融、業務、理財' },
+    '從殺格': { trait: '日主極弱而官殺當權，順從權勢，適合在大組織中擔任要職。', job: '公職、大型企業、管理、軍警' },
+    '從兒格': { trait: '日主極弱而食傷當權，順從才華流露，聰明有創意。', job: '藝術、創作、技術、表演、教學' }
+  };
+
+  function detectPattern(r, k) {
+    var P = r.pillars, ds = P.day.stemIndex, mb = P.month.branchIndex;
+    var E_ = function (arr) { return arr.slice(); }; // 保留五行索引，由 strength() 統一轉成名稱
+
+    // 從強：生扶力量壓倒性，且官殺無力
+    if (k.ratio >= 0.8 && k.byElement[k.officer] < 1) {
+      return {
+        name: '從強格', cong: '從強', basis: '日主與印比之氣佔全局約 ' + Math.round(k.ratio * 100) + '%，官殺無力制衡',
+        favorable: E_([k.de, k.resource, k.output]), unfavorable: E_([k.officer, k.wealth]),
+        reason: '從強格宜順其旺勢：喜比劫、印星，並以食傷洩秀；忌官殺逆勢、財星激怒旺神'
+      };
+    }
+    // 從弱：日主極弱、無本氣中氣之根、天干無印比相助
+    var stemHelp = ['year', 'month', 'hour'].some(function (x) {
+      var e = STEM_EL[P[x].stemIndex];
+      return e === k.de || e === k.resource;
+    });
+    if (k.ratio <= 0.2 && k.strongRoots.length === 0 && !stemHelp) {
+      var cands = [[k.wealth, '從財'], [k.officer, '從殺'], [k.output, '從兒']];
+      cands.sort(function (a, b) { return k.byElement[b[0]] - k.byElement[a[0]]; });
+      var lead = cands[0][1], fav, unf, why;
+      if (lead === '從財') { fav = [k.wealth, k.output]; unf = [k.de, k.resource]; why = '從財格宜順財勢：喜財星、食傷生財；忌比劫奪財、印星'; }
+      else if (lead === '從殺') { fav = [k.officer, k.wealth]; unf = [k.de, k.resource, k.output]; why = '從殺格宜順官殺之勢：喜官殺、財星生殺；忌比劫、印星與食傷制殺'; }
+      else { fav = [k.output, k.wealth]; unf = [k.resource, k.officer]; why = '從兒格宜順食傷之勢：喜食傷、財星；忌印星奪食、官殺'; }
+      return {
+        name: lead + '格', cong: lead, basis: '日主之氣僅佔約 ' + Math.round(k.ratio * 100) + '%，地支無根、天干無印比相助，只能順從最旺的' + E[cands[0][0]] + '勢',
+        favorable: E_(fav), unfavorable: E_(unf), reason: why
+      };
+    }
+
+    // 正格：月令為日主祿、刃者為建祿格、月刃格；否則以月令藏干取格，透出天干者優先，比劫不取
+    var hidden = HIDDEN[mb];
+    var stems = ['year', 'month', 'hour'].map(function (x) { return P[x].stemIndex; });
+    var name, chosen = null, tou = false, god;
+    if (LU[ds] === mb) { name = '建祿格'; chosen = hidden[0]; }
+    else if (YANGREN[ds] === mb) { name = '月刃格'; chosen = hidden[0]; }
+    else {
+      var usable = hidden.filter(function (x) { var g = Bazi.tenGod(ds, x); return g !== '比肩' && g !== '劫財'; });
+      for (var i = 0; i < usable.length; i++) {
+        if (stems.indexOf(usable[i]) >= 0) { chosen = usable[i]; tou = true; break; }
+      }
+      if (chosen == null) chosen = usable.length ? usable[0] : hidden[0];
+      god = Bazi.tenGod(ds, chosen);
+      name = (god === '比肩' || god === '劫財') ? '建祿格' : god + '格';
+    }
+    god = Bazi.tenGod(ds, chosen);
+    return {
+      name: name, cong: null,
+      basis: name === '建祿格' && LU[ds] === mb ? '月令' + P.month.branch + '為日主' + S[ds] + '之祿' :
+        name === '月刃格' ? '月令' + P.month.branch + '為日主' + S[ds] + '之羊刃' :
+        '月令' + P.month.branch + '藏' + HIDDEN[mb].map(function (x) { return S[x]; }).join('') + '，' +
+        (tou ? S[chosen] + '透出天干' : '取' + S[chosen]) + '，為日主之' + god
     };
   }
 
@@ -347,6 +437,11 @@
     missing.forEach(function (x) { blind.push(x.g.lack); });
 
     var careers = top.map(function (x) { return { title: x.g.career.title, jobs: x.g.career.jobs, why: x.g.career.why }; });
+    var pn = PATTERN_NOTES[st.pattern.name];
+    if (pn) {
+      traits.splice(2, 0, '格局為' + st.pattern.name + '：' + pn.trait);
+      careers.unshift({ title: st.pattern.name + '的方向', jobs: pn.job, why: st.pattern.basis });
+    }
     var fav = st.favorable.slice(0, 2);
     careers.push({
       title: '喜用五行的領域',
@@ -368,7 +463,7 @@
 
     return {
       title: base.title,
-      headline: S[ds] + E[STEM_EL[ds]] + '日主・' + st.level + '・' + top.map(function (x) { return x.g.name; }).join('與') + '較旺',
+      headline: S[ds] + E[STEM_EL[ds]] + '日主・' + st.pattern.name + '・' + st.level + '・' + top.map(function (x) { return x.g.name; }).join('與') + '較旺',
       traits: traits,
       shenshaTraits: ssTraits,
       strengths: base.strengths,
@@ -605,6 +700,8 @@
     }
     return out;
   }
+
+  Bazi.PATTERN_NOTES = PATTERN_NOTES;
 
   function analyze(r, opts) {
     var res = analyzeCore(r, opts);

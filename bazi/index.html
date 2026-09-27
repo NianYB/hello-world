@@ -140,6 +140,11 @@
   .none { color: var(--muted); font-size: 12px; }
 
   .panel { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 14px; }
+  .pattern { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+  .pattern p { margin: 0; }
+  .pattern-name { font: 900 20px/1 var(--serif); letter-spacing: .06em; padding: 8px 10px; border-radius: 6px; border: 2px solid var(--seal); color: var(--seal); white-space: nowrap; }
+  .pattern.cong .pattern-name { background: var(--seal); color: var(--seal-ink); }
+  .cong-note { margin-top: 6px !important; font-size: 13px; color: var(--seal); font-weight: 500; }
   .verdict { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
   .verdict strong { font: 900 30px/1 var(--serif); letter-spacing: .06em; }
   .verdict span { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
@@ -361,7 +366,7 @@
     <p>選擇出生地後，會自動帶入經度並以真太陽時（經度差 + 均時差）定日柱與時柱；同時依內建時區資料庫判斷出生當時是否實施夏令時間（例如台灣 1945–1979 年間、中國 1986–1991 年間的夏季）或使用不同時區（例如日治時期台灣為 UTC+9），自動換算回標準時間。清單中沒有的地點可選「其他地區」手動輸入。</p>
     <p>預設 23:00 起即換日（子時一律算隔日）；勾選「晚子時仍算當日」則 23:00–24:00 的日柱不變，時柱依當日日干起子時。</p>
     <p>大運採陽男陰女順行、陰男陽女逆行，以出生到前後一節的天數「三天折一年」推算起運歲數。歲數為實歲。</p>
-    <p>日主強弱以加權計分估算：月令地支權重 3，其他地支 1.2（藏干依本氣、中氣、餘氣分配），天干各 1；生扶日主的五行（印、比劫）占比 60% 以上為身強，50–60% 偏強，40–50% 偏弱，40% 以下身弱。喜用神採扶抑法，未處理從格、化氣格等特殊格局。</p>
+    <p>日主強弱以加權計分估算：月令地支權重 3，其他地支 1.2（藏干依本氣、中氣、餘氣分配），天干各 1；生扶日主的五行（印、比劫）占比 60% 以上為身強，50–60% 偏強，40–50% 偏弱，40% 以下身弱。喜用神一般採扶抑法；若日主極旺（生扶力量 80% 以上且官殺無力）判為從強格，若日主極弱（20% 以下、地支無根、天干無印比）判為從財、從殺或從兒格，喜忌改為順從旺勢。格局以月令取用：月令為日主之祿或羊刃為建祿格、月刃格，其餘取月令藏干中透出天干者（比劫不取），未透則取本氣。化氣格等更特殊的格局未處理。</p>
     <p>神煞只列常見幾種：天乙貴人、文昌、祿神、羊刃看日干；桃花、驛馬、華蓋、將星看年支與日支；紅鸞、天喜看年支；空亡以日柱所在旬推算。</p>
     <p>「儲存命盤」會把輸入資料存到你的 claude.ai 帳號，只有你自己看得到；無法使用帳號儲存時，改存在目前的瀏覽器。「匯出 PDF」會把目前的命盤與分析轉成 A4 PDF 檔。</p>
     <p>分析文字為傳統命理的通用說法，只是規則推算，並非對個人的判斷，結果僅供參考與娛樂。</p>
@@ -461,6 +466,10 @@
     var elChip = function (e, bad) { return '<span class="el-chip e-' + e + (bad ? ' bad' : '') + '">' + e + '</span>'; };
     var check = function (ok, text) { return '<li><span class="pill ' + (ok ? 'yes">得' : 'no">失') + '</span><span>' + text + '</span></li>'; };
     h += '<div style="margin-top:28px"><h2>命局分析</h2><div class="panel">';
+    var PT = ST.pattern, PTN = Bazi.PATTERN_NOTES[PT.name];
+    h += '<div class="pattern' + (PT.cong ? ' cong' : '') + '"><span class="pattern-name">' + PT.name + '</span><div><p>' + PT.basis + '。</p>' +
+      (PTN ? '<p class="note">' + PTN.trait + '</p>' : '') +
+      (PT.cong ? '<p class="cong-note">這是特殊的「從格」：日主' + (PT.cong === '從強' ? '極旺' : '極弱') + '，喜忌與一般命盤相反，以下喜用神、流年與化解建議都已依從格調整。</p>' : '') + '</div></div>';
     h += '<div class="verdict"><strong>' + ST.level + '</strong><span>生扶日主的力量約占全局 ' + Math.round(ST.ratio * 100) + '%</span></div>';
     h += '<div><div class="gauge" role="img" aria-label="日主強弱 ' + Math.round(ST.ratio * 100) + '%"><i style="left:' + Math.min(100, Math.max(0, ST.ratio * 100)) + '%"></i></div>' +
       '<div class="gauge-scale"><span>身弱</span><span>偏弱</span><span>偏強</span><span>身強</span></div></div>';

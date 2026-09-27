@@ -187,3 +187,21 @@ test('名詞小辭典', () => {
     assert.ok(G[t] && G[t].length > 10, t);
   }
 });
+
+test('農曆換算', () => {
+  const L = require('../lunar.js');
+  const cny = { 1950: [2, 17], 1985: [2, 20], 1990: [1, 27], 2000: [2, 5], 2020: [1, 25], 2023: [1, 22], 2024: [2, 10], 2025: [1, 29], 2033: [1, 31] };
+  for (const y in cny) {
+    const s = L.toSolar(+y, 1, 1, false);
+    assert.deepStrictEqual([s.month, s.day], cny[y], y + ' 春節');
+  }
+  const leaps = { 1984: 10, 1990: 5, 2012: 4, 2014: 9, 2017: 6, 2020: 4, 2023: 2, 2025: 6, 2028: 5, 2033: 11 };
+  for (const y in leaps) assert.strictEqual(L.leapMonth(+y), leaps[y], y + ' 閏月');
+  assert.strictEqual(L.toLunar(2024, 9, 17).text, '甲辰年八月十五'); // 中秋
+  assert.strictEqual(L.toLunar(1990, 5, 15).text, '庚午年四月廿一');
+  // 閏月往返
+  const s = L.toSolar(2023, 2, 10, true);
+  const back = L.toLunar(s.year, s.month, s.day);
+  assert.deepStrictEqual([back.year, back.month, back.day, back.leap], [2023, 2, 10, true]);
+  assert.throws(() => L.toSolar(2024, 5, 1, true), /沒有閏/);
+});

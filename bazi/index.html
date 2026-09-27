@@ -50,6 +50,7 @@
   }
 
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   body {
     margin: 0; background: var(--paper); color: var(--ink);
     font: 15px/1.6 var(--sans);
@@ -266,6 +267,13 @@
   .term-pop p { margin: 0; font-size: 14px; line-height: 1.6; }
   .term-pop button { justify-self: end; min-height: 32px; font-size: 13px; padding: 0 12px; letter-spacing: 0; }
   .pdf-sheet button.term { border-bottom: 0; }
+  fieldset.lunar-fields { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 4px; grid-column: span 2; }
+  fieldset.lunar-fields legend { padding: 0; font-size: 12px; color: var(--muted); letter-spacing: .06em; margin-bottom: 4px; }
+  .lunar-fields div { display: grid; grid-template-columns: minmax(70px, 1fr) auto minmax(80px, 1fr) minmax(80px, 1fr); gap: 6px; align-items: center; }
+  .lunar-fields span { font-size: 14px; color: var(--muted); }
+  .lunar-fields small { font-size: 12px; color: var(--muted); min-height: 1.3em; }
+  .lunar-fields small.bad { color: var(--fire); }
+  @media (max-width: 480px) { fieldset.lunar-fields { grid-column: 1 / -1; } }
   .detail .fix { display: block; margin-top: 4px; font-size: 12.5px; color: var(--ink); }
   .detail em, .advice em { font-style: normal; font-weight: 700; font-size: 11px; letter-spacing: .06em; padding: 0 5px; margin-right: 6px; border-radius: 3px; background: var(--seal-soft2); color: var(--seal); }
   .advice { background: var(--paper); border: 1px dashed var(--line); border-radius: 8px; padding: 8px 10px; display: grid; gap: 4px; }
@@ -382,7 +390,20 @@
 
   <form id="f" novalidate>
     <label>命主姓名（選填）<input id="name" type="text" maxlength="40" placeholder="例：王小明" autocomplete="off"></label>
-    <label>出生日期（國曆）<input id="date" type="date" required value="1990-05-15"></label>
+    <label>曆法
+      <select id="cal"><option value="solar">國曆（陽曆）</option><option value="lunar">農曆（陰曆）</option></select>
+    </label>
+    <label id="solarWrap">出生日期（國曆）<input id="date" type="date" required value="1990-05-15"></label>
+    <fieldset id="lunarWrap" class="lunar-fields" hidden>
+      <legend>出生日期（農曆）</legend>
+      <div>
+        <input id="lYear" type="number" min="1901" max="2099" inputmode="numeric" aria-label="農曆年">
+        <span>年</span>
+        <select id="lMonth" aria-label="農曆月"></select>
+        <select id="lDay" aria-label="農曆日"></select>
+      </div>
+      <small id="lunarNote"></small>
+    </fieldset>
     <label>出生時間<input id="time" type="time" required value="14:30"></label>
     <label>性別
       <select id="gender"><option value="female">女</option><option value="male">男</option></select>
@@ -455,6 +476,7 @@
 <script src="bazi.js"></script>
 <script src="cities.js"></script>
 <script src="glossary.js"></script>
+<script src="lunar.js"></script>
 <script src="analysis.js"></script>
 <script>
 (function () {
@@ -609,12 +631,17 @@
     svg.addEventListener('pointerleave', hide);
   }
 
+  function lunarText(inp) {
+    try { return '<span>農曆 ' + BaziLunar.toLunar(inp.year, inp.month, inp.day).text + '</span>'; } catch (e) { return ''; }
+  }
+
   function render(r) {
     var P = r.pillars, h = '';
     var A = Bazi.analyze(r);
     var ST = A.strength;
     var nm = $('name').value.trim();
     h += '<div class="report-head"><b>' + (nm ? esc(nm) : '八字命盤') + '</b><span>國曆 ' + fmt(r.input) + '（' + (cityZone() ? $('city').value + '，' : '') + 'UTC' + (r.input.timezone >= 0 ? '+' : '') + r.input.timezone + '）</span>' +
+      lunarText(r.input) +
       '<span>' + (r.input.gender === 'male' ? '男' : '女') + '命</span>' +
       '<span>' + P.year.name + ' ' + P.month.name + ' ' + P.day.name + ' ' + P.hour.name + '</span></div>';
 
@@ -838,12 +865,79 @@
   $('city').addEventListener('change', function () { syncCity(true); });
   syncCity(true);
 
+  // ---------- 農曆輸入 ----------
+  function fillLunarMonths(ly, keep) {
+    var sel = $('lMonth'), prev = keep || sel.value, leap = 0;
+    try { leap = BaziLunar.leapMonth(ly); } catch (e) { leap = 0; }
+    sel.textContent = '';
+    for (var m = 1; m <= 12; m++) {
+      [false, true].forEach(function (isLeap) {
+        if (isLeap && leap !== m) return;
+        var o = document.createElement('option');
+        o.value = (isLeap ? 'L' : '') + m;
+        o.textContent = (isLeap ? '閏' : '') + BaziLunar.MONTH_NAMES[m - 1] + '月';
+        sel.appendChild(o);
+      });
+    }
+    if (Array.prototype.some.call(sel.options, function (o) { return o.value === prev; })) sel.value = prev;
+  }
+  function fillLunarDays(keep) {
+    var sel = $('lDay'), prev = +(keep || sel.value || 1);
+    var mv = $('lMonth').value, leap = mv.charAt(0) === 'L', m = +mv.replace('L', '');
+    var n = 30;
+    try { n = BaziLunar.monthDays(+$('lYear').value, m, leap) || 30; } catch (e) { n = 30; }
+    sel.textContent = '';
+    for (var d = 1; d <= n; d++) {
+      var o = document.createElement('option');
+      o.value = d; o.textContent = BaziLunar.DAY_NAMES[d - 1];
+      sel.appendChild(o);
+    }
+    sel.value = Math.min(prev, n);
+  }
+  function solarToLunarFields() {
+    var p = $('date').value.split('-').map(Number);
+    if (p.length !== 3 || !p[0]) return;
+    try {
+      var l = BaziLunar.toLunar(p[0], p[1], p[2]);
+      $('lYear').value = l.year;
+      fillLunarMonths(l.year, (l.leap ? 'L' : '') + l.month);
+      fillLunarDays(l.day);
+      lunarToSolar();
+    } catch (e) { /* 超出範圍時維持原狀 */ }
+  }
+  function lunarToSolar() {
+    var note = $('lunarNote');
+    var mv = $('lMonth').value;
+    try {
+      var s = BaziLunar.toSolar(+$('lYear').value, +mv.replace('L', ''), +$('lDay').value, mv.charAt(0) === 'L');
+      $('date').value = s.year + '-' + pad(s.month) + '-' + pad(s.day);
+      note.textContent = '＝ 國曆 ' + $('date').value;
+      note.className = '';
+      return true;
+    } catch (e) {
+      note.textContent = e.message;
+      note.className = 'bad';
+      return false;
+    }
+  }
+  function syncCal() {
+    var lunar = $('cal').value === 'lunar';
+    $('lunarWrap').hidden = !lunar;
+    $('solarWrap').hidden = lunar;
+    if (lunar) solarToLunarFields();
+  }
+  $('cal').addEventListener('change', syncCal);
+  $('lYear').addEventListener('change', function () { fillLunarMonths(+$('lYear').value); fillLunarDays(); lunarToSolar(); });
+  $('lMonth').addEventListener('change', function () { fillLunarDays(); lunarToSolar(); });
+  $('lDay').addEventListener('change', lunarToSolar);
+
   var lastOk = false;
   function run(e) {
     if (e) e.preventDefault();
     var err = $('err');
     err.hidden = true;
     lastOk = false;
+    if ($('cal').value === 'lunar' && !lunarToSolar()) { err.textContent = $('lunarNote').textContent + '，請確認農曆日期。'; err.hidden = false; return; }
     var d = $('date').value, t = $('time').value;
     if (!d || !t) { err.textContent = '請填入出生日期與時間。'; err.hidden = false; return; }
     try {
@@ -907,6 +1001,7 @@
     // 舊版儲存的命盤沒有出生地，視為手動輸入
     $('city').value = c.city && BaziCities.get(c.city) ? c.city : 'custom';
     syncCity(false);
+    if ($('cal').value === 'lunar') solarToLunarFields();
   }
   function label(c) {
     return c.name || (c.date + ' ' + (c.gender === 'male' ? '男' : '女'));

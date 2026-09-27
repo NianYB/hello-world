@@ -1,0 +1,53 @@
+#!/usr/bin/env node
+'use strict';
+// 用法：node cli.js 1990-05-15 14:30 [--gender male|female] [--tz 8] [--lng 121.5] [--zi-same-day]
+const Bazi = require('./bazi.js');
+
+function usage() {
+  console.log('用法：node cli.js YYYY-MM-DD HH:MM [--gender male|female] [--tz 時區] [--lng 經度] [--zi-same-day]');
+  console.log('範例：node cli.js 1990-05-15 14:30 --gender female --lng 121.5');
+  process.exit(1);
+}
+
+const args = process.argv.slice(2);
+if (args.length < 2) usage();
+const [y, mo, d] = args[0].split('-').map(Number);
+const [h, mi] = args[1].split(':').map(Number);
+const opt = { year: y, month: mo, day: d, hour: h, minute: mi || 0 };
+for (let i = 2; i < args.length; i++) {
+  const a = args[i];
+  if (a === '--gender') opt.gender = { m: 'male', f: 'female', 男: 'male', 女: 'female' }[args[++i]] || args[i];
+  else if (a === '--tz') opt.timezone = Number(args[++i]);
+  else if (a === '--lng') opt.longitude = Number(args[++i]);
+  else if (a === '--zi-same-day') opt.lateZiNextDay = false;
+  else usage();
+}
+
+let r;
+try { r = Bazi.calculate(opt); } catch (e) { console.error(e.message); process.exit(1); }
+
+const pad = (n) => String(n).padStart(2, '0');
+const fmt = (t) => `${t.year}-${pad(t.month)}-${pad(t.day)} ${pad(t.hour)}:${pad(t.minute)}`;
+const keys = ['year', 'month', 'day', 'hour'];
+const col = (s) => s + '　'.repeat(Math.max(0, 6 - s.length));
+
+console.log(`\n出生時間：${fmt(r.input)}（UTC${r.input.timezone >= 0 ? '+' : ''}${r.input.timezone}）`);
+if (r.solarTime) console.log(`真太陽時：${fmt(r.solarTime.time)}（經度 ${r.solarTime.longitude}°，校正 ${r.solarTime.offsetMinutes.toFixed(1)} 分）`);
+console.log(`生肖：${r.zodiac}　日主：${r.dayMaster.stem}（${r.dayMaster.yinYang}${r.dayMaster.element}）\n`);
+console.log('　　　' + ['年柱', '月柱', '日柱', '時柱'].map(col).join(''));
+console.log('十神　' + keys.map((k) => col(r.pillars[k].tenGod)).join(''));
+console.log('天干　' + keys.map((k) => col(r.pillars[k].stem + r.pillars[k].stemElement)).join(''));
+console.log('地支　' + keys.map((k) => col(r.pillars[k].branch + r.pillars[k].branchElement)).join(''));
+console.log('藏干　' + keys.map((k) => col(r.pillars[k].hiddenStems.map((x) => x.stem).join(''))).join(''));
+console.log('納音　' + keys.map((k) => col(r.pillars[k].nayin)).join(''));
+
+console.log('\n五行（干支）：' + Object.entries(r.elementCounts).map(([e, n]) => `${e}${n}`).join(' '));
+console.log('五行（含藏干）：' + Object.entries(r.elementCountsWithHidden).map(([e, n]) => `${e}${n}`).join(' '));
+console.log(`\n節氣：${r.solarTerms.previous.name} ${fmt(r.solarTerms.previous.time)} → ${r.solarTerms.next.name} ${fmt(r.solarTerms.next.time)}`);
+
+if (r.luckPillars) {
+  const lp = r.luckPillars;
+  console.log(`\n大運（${lp.direction}，${lp.startAge.years} 歲 ${lp.startAge.months} 個月起運，約 ${lp.startDate.year}-${pad(lp.startDate.month)}）`);
+  console.log(lp.pillars.map((p) => `${p.startAge}歲 ${p.name}（${p.startYear}）`).join('\n'));
+}
+console.log();

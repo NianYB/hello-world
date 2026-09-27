@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 'use strict';
-// 用法：node cli.js 1990-05-15 14:30 [--gender male|female] [--tz 8] [--lng 121.5] [--zi-same-day] [--detail]
+// 用法：node cli.js 1990-05-15 14:30 [--gender male|female] [--tz 8] [--city 台北] [--zone Asia/Taipei] [--lng 121.5] [--zi-same-day] [--detail]
 const Bazi = require('./analysis.js');
 
 function usage() {
-  console.log('用法：node cli.js YYYY-MM-DD HH:MM [--gender male|female] [--tz 時區] [--lng 經度] [--zi-same-day] [--detail]');
+  console.log('用法：node cli.js YYYY-MM-DD HH:MM [--gender male|female] [--tz 時區] [--city 台北] [--zone Asia/Taipei] [--lng 經度] [--zi-same-day] [--detail]');
   console.log('範例：node cli.js 1990-05-15 14:30 --gender female --lng 121.5');
   process.exit(1);
 }
@@ -19,6 +19,13 @@ for (let i = 2; i < args.length; i++) {
   const a = args[i];
   if (a === '--gender') opt.gender = { m: 'male', f: 'female', 男: 'male', 女: 'female' }[args[++i]] || args[i];
   else if (a === '--tz') opt.timezone = Number(args[++i]);
+  else if (a === '--zone') opt.timeZone = args[++i];
+  else if (a === '--city') {
+    const c = require('./cities.js').get(args[++i]);
+    if (!c) { console.error('找不到城市：' + args[i]); process.exit(1); }
+    opt.timeZone = c.zone;
+    if (opt.longitude == null) opt.longitude = c.longitude;
+  }
   else if (a === '--lng') opt.longitude = Number(args[++i]);
   else if (a === '--zi-same-day') opt.lateZiNextDay = false;
   else if (a === '--detail') showDetail = true;
@@ -34,6 +41,7 @@ const keys = ['year', 'month', 'day', 'hour'];
 const col = (s) => s + '　'.repeat(Math.max(0, 6 - s.length));
 
 console.log(`\n出生時間：${fmt(r.input)}（UTC${r.input.timezone >= 0 ? '+' : ''}${r.input.timezone}）`);
+if (r.zone && r.zone.dst) console.log(`夏令時間：出生當時為 UTC+${r.zone.offset}，已扣回 ${r.zone.offset - r.zone.standardOffset} 小時`);
 if (r.solarTime) console.log(`真太陽時：${fmt(r.solarTime.time)}（經度 ${r.solarTime.longitude}°，校正 ${r.solarTime.offsetMinutes.toFixed(1)} 分）`);
 console.log(`生肖：${r.zodiac}　日主：${r.dayMaster.stem}（${r.dayMaster.yinYang}${r.dayMaster.element}）\n`);
 {

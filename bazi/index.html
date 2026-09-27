@@ -85,6 +85,7 @@
 
   .summary { display: flex; flex-wrap: wrap; gap: 8px 20px; color: var(--muted); font-size: 14px; }
   .summary b { color: var(--ink); font-weight: 500; }
+  .zone-note { color: var(--seal); font-weight: 500; }
   .tag { display: inline-block; font-size: 12px; padding: 1px 8px; border: 1px solid var(--line); border-radius: 99px; color: var(--muted); }
 
   h2 { margin: 0 0 10px; font: 700 17px/1.3 var(--serif); letter-spacing: .08em; }
@@ -320,7 +321,10 @@
     <label>性別
       <select id="gender"><option value="female">女</option><option value="male">男</option></select>
     </label>
-    <label>時區（UTC）
+    <label>出生地
+      <select id="city"></select>
+    </label>
+    <label id="tzWrap" hidden>時區（UTC）
       <select id="tz">
         <option value="8" selected>+8 台灣／中國／香港／新加坡</option>
         <option value="9">+9 日本／韓國</option>
@@ -332,7 +336,7 @@
         <option value="10">+10 澳東</option>
       </select>
     </label>
-    <label>出生地經度（選填）<input id="lng" type="number" step="0.01" min="-180" max="180" placeholder="例：台北 121.56" value="121.56"></label>
+    <label id="lngWrap" hidden>出生地經度（選填）<input id="lng" type="number" step="0.01" min="-180" max="180" placeholder="例：台北 121.56" value="121.56"></label>
     <label class="check"><input id="zi" type="checkbox"> 晚子時（23 點後）仍算當日</label>
     <div class="actions">
       <button type="submit">排盤</button>
@@ -354,7 +358,7 @@
   <details>
     <summary>計算說明</summary>
     <p>年柱以立春為界，月柱以十二「節」為界，節氣時刻以 VSOP87 天文演算法求太陽視黃經，誤差約一分鐘。</p>
-    <p>填入經度時，日柱與時柱改用真太陽時（經度差 + 均時差）。不填則直接用時鐘時間。</p>
+    <p>選擇出生地後，會自動帶入經度並以真太陽時（經度差 + 均時差）定日柱與時柱；同時依內建時區資料庫判斷出生當時是否實施夏令時間（例如台灣 1945–1979 年間、中國 1986–1991 年間的夏季）或使用不同時區（例如日治時期台灣為 UTC+9），自動換算回標準時間。清單中沒有的地點可選「其他地區」手動輸入。</p>
     <p>預設 23:00 起即換日（子時一律算隔日）；勾選「晚子時仍算當日」則 23:00–24:00 的日柱不變，時柱依當日日干起子時。</p>
     <p>大運採陽男陰女順行、陰男陽女逆行，以出生到前後一節的天數「三天折一年」推算起運歲數。歲數為實歲。</p>
     <p>日主強弱以加權計分估算：月令地支權重 3，其他地支 1.2（藏干依本氣、中氣、餘氣分配），天干各 1；生扶日主的五行（印、比劫）占比 60% 以上為身強，50–60% 偏強，40–50% 偏弱，40% 以下身弱。喜用神採扶抑法，未處理從格、化氣格等特殊格局。</p>
@@ -366,6 +370,7 @@
 </main>
 
 <script src="bazi.js"></script>
+<script src="cities.js"></script>
 <script src="analysis.js"></script>
 <script>
 (function () {
@@ -381,13 +386,18 @@
     var A = Bazi.analyze(r);
     var ST = A.strength;
     var nm = $('name').value.trim();
-    h += '<div class="report-head"><b>' + (nm ? esc(nm) : '八字命盤') + '</b><span>國曆 ' + fmt(r.input) + '（UTC' + (r.input.timezone >= 0 ? '+' : '') + r.input.timezone + '）</span>' +
+    h += '<div class="report-head"><b>' + (nm ? esc(nm) : '八字命盤') + '</b><span>國曆 ' + fmt(r.input) + '（' + (cityZone() ? $('city').value + '，' : '') + 'UTC' + (r.input.timezone >= 0 ? '+' : '') + r.input.timezone + '）</span>' +
       '<span>' + (r.input.gender === 'male' ? '男' : '女') + '命</span>' +
       '<span>' + P.year.name + ' ' + P.month.name + ' ' + P.day.name + ' ' + P.hour.name + '</span></div>';
 
     h += '<div class="summary" style="margin-top:12px">';
     h += '<span>日主 <b class="e-' + r.dayMaster.element + '">' + r.dayMaster.stem + '</b>（' + r.dayMaster.yinYang + r.dayMaster.element + '）</span>';
     h += '<span>生肖 <b>' + r.zodiac + '</b></span>';
+    if (r.zone && r.zone.dst) {
+      h += '<span class="zone-note">出生當時實施夏令時間（UTC+' + r.zone.offset + '），已自動扣回 ' + (r.zone.offset - r.zone.standardOffset) + ' 小時</span>';
+    } else if (r.zone && r.zone.offset !== r.zone.currentStandardOffset) {
+      h += '<span class="zone-note">出生當時當地時區為 UTC' + (r.zone.offset >= 0 ? '+' : '') + r.zone.offset + '（與現在不同），已依當時時區換算</span>';
+    }
     if (r.solarTime) h += '<span>真太陽時 <b>' + fmt(r.solarTime.time) + '</b>（' + (r.solarTime.offsetMinutes >= 0 ? '+' : '') + r.solarTime.offsetMinutes.toFixed(1) + ' 分）</span>';
     h += '</div>';
 
@@ -542,6 +552,37 @@
     $('out').innerHTML = h;
   }
 
+  // ---------- 出生地 ----------
+  (function buildCities() {
+    var sel = $('city');
+    BaziCities.groups.forEach(function (g) {
+      var og = document.createElement('optgroup');
+      og.label = g.name;
+      g.cities.forEach(function (c) {
+        var o = document.createElement('option');
+        o.value = c.name; o.textContent = c.name;
+        og.appendChild(o);
+      });
+      sel.appendChild(og);
+    });
+    var o = document.createElement('option');
+    o.value = 'custom'; o.textContent = '其他地區（手動輸入時區與經度）';
+    sel.appendChild(o);
+    sel.value = '台北';
+  })();
+  function cityZone() {
+    var c = BaziCities.get($('city').value);
+    return c ? c.zone : null;
+  }
+  function syncCity(fillLng) {
+    var c = BaziCities.get($('city').value);
+    $('tzWrap').hidden = !!c;
+    $('lngWrap').hidden = !!c;
+    if (c && fillLng !== false) $('lng').value = c.longitude;
+  }
+  $('city').addEventListener('change', function () { syncCity(true); });
+  syncCity(true);
+
   var lastOk = false;
   function run(e) {
     if (e) e.preventDefault();
@@ -555,6 +596,7 @@
       render(Bazi.calculate({
         year: dp[0], month: dp[1], day: dp[2], hour: tp[0], minute: tp[1],
         gender: $('gender').value, timezone: +$('tz').value,
+        timeZone: cityZone(),
         longitude: $('lng').value === '' ? null : +$('lng').value,
         lateZiNextDay: !$('zi').checked
       }));
@@ -593,7 +635,7 @@
   function formState() {
     return {
       name: $('name').value.trim(), date: $('date').value, time: $('time').value,
-      gender: $('gender').value, tz: $('tz').value, lng: $('lng').value, zi: $('zi').checked,
+      gender: $('gender').value, city: $('city').value, tz: $('tz').value, lng: $('lng').value, zi: $('zi').checked,
       savedAt: Date.now()
     };
   }
@@ -602,6 +644,9 @@
     $('date').value = c.date; $('time').value = c.time;
     $('gender').value = c.gender; $('tz').value = String(c.tz);
     $('lng').value = c.lng == null ? '' : c.lng; $('zi').checked = !!c.zi;
+    // 舊版儲存的命盤沒有出生地，視為手動輸入
+    $('city').value = c.city && BaziCities.get(c.city) ? c.city : 'custom';
+    syncCity(false);
   }
   function label(c) {
     return c.name || (c.date + ' ' + (c.gender === 'male' ? '男' : '女'));

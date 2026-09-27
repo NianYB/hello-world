@@ -186,6 +186,39 @@
     return E / RAD * 4;
   }
 
+  // ---------- 時區與夏令時間 ----------
+  // 使用瀏覽器 / Node 內建的 IANA 時區資料庫，含歷史夏令時間（如台灣 1945–1979、中國 1986–1991）
+
+  // 某 UTC 時刻在該時區的 UTC 偏移（小時）
+  function zoneOffsetAt(zone, utcMs) {
+    var parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: zone, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric',
+      hour: 'numeric', minute: 'numeric', second: 'numeric'
+    }).formatToParts(new Date(utcMs));
+    var get = function (t) { return +parts.filter(function (x) { return x.type === t; })[0].value; };
+    var asUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour') % 24, get('minute'), get('second'));
+    var d = new Date(0); d.setUTCFullYear(get('year'), get('month') - 1, get('day')); // 處理 0–99 年
+    asUtc = asUtc - Date.UTC(get('year'), get('month') - 1, get('day')) + d.getTime();
+    return Math.round((asUtc - utcMs) / 60000) / 60;
+  }
+
+  function wallToUtcMs(y, mo, d, h, mi) {
+    var dt = new Date(0);
+    dt.setUTCFullYear(y, mo - 1, d);
+    dt.setUTCHours(h, mi, 0, 0);
+    return dt.getTime();
+  }
+
+  // 當地時鐘時間在該時區的 UTC 偏移（小時），並判斷是否為夏令時間
+  function zoneInfo(zone, y, mo, d, h, mi) {
+    var wall = wallToUtcMs(y, mo, d, h, mi);
+    var off = zoneOffsetAt(zone, wall);
+    off = zoneOffsetAt(zone, wall - off * 3600000);
+    var std = Math.min(zoneOffsetAt(zone, Date.UTC(y, 0, 15)), zoneOffsetAt(zone, Date.UTC(y, 6, 15)));
+    var nowStd = Math.min(zoneOffsetAt(zone, Date.UTC(2025, 0, 15)), zoneOffsetAt(zone, Date.UTC(2025, 6, 15)));
+    return { zone: zone, offset: off, dst: off > std, standardOffset: std, currentStandardOffset: nowStd };
+  }
+
   // ---------- 干支工具 ----------
 
   function ganzhiIndex(stem, branch) { return mod(6 * stem - 5 * branch, 60); }
@@ -229,13 +262,18 @@
   function calculate(input) {
     var y = +input.year, mo = +input.month, d = +input.day;
     var h = +(input.hour || 0), mi = +(input.minute || 0);
-    var tz = input.timezone == null || input.timezone === '' ? 8 : +input.timezone;
     var lateZiNextDay = input.lateZiNextDay !== false;
+    var zone = null;
+    var tz = input.timezone == null || input.timezone === '' ? 8 : +input.timezone;
     if (!(y >= 1 && mo >= 1 && mo <= 12 && d >= 1 && d <= 31 && h >= 0 && h < 24 && mi >= 0 && mi < 60)) {
       throw new Error('日期或時間格式不正確');
     }
     var check = fromJulianDay(toJulianDay(y, mo, d, 12));
     if (check.month !== mo || check.day !== d) throw new Error('日期不存在：' + y + '-' + mo + '-' + d);
+    if (input.timeZone) {
+      zone = zoneInfo(input.timeZone, y, mo, d, h, mi);
+      tz = zone.offset;
+    }
 
     var jdUT = toJulianDay(y, mo, d, h, mi) - tz / 24;
 
@@ -247,6 +285,9 @@
       var offsetMin = (lng - tz * 15) * 4 + equationOfTime(jdUT);
       local = fromJulianDay(toJulianDay(y, mo, d, h, mi) + offsetMin / 1440);
       solarTime = { longitude: lng, offsetMinutes: offsetMin, time: local };
+    } else if (zone && zone.dst) {
+      // 沒有經度時，至少扣掉夏令時間的差額，還原成標準時間
+      local = fromJulianDay(toJulianDay(y, mo, d, h, mi) - (zone.offset - zone.standardOffset) / 24);
     }
 
     // 年柱、月柱：依出生瞬間的太陽黃經（與地點無關）
@@ -302,6 +343,7 @@
 
     var result = {
       input: { year: y, month: mo, day: d, hour: h, minute: mi, timezone: tz, gender: input.gender || null },
+      zone: zone,
       solarTime: solarTime,
       sunLongitude: lambda,
       pillars: pillars,
@@ -351,6 +393,7 @@
     calculate: calculate,
     tenGod: tenGod,
     ganzhiIndex: ganzhiIndex,
+    zoneInfo: zoneInfo,
     sunLongitude: sunLongitudeUT,
     findSolarTerm: findSolarTerm,
     equationOfTime: equationOfTime,

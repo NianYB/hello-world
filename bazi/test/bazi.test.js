@@ -76,3 +76,20 @@ test('大運方向與起運', () => {
 test('不存在的日期會報錯', () => {
   assert.throws(() => Bazi.calculate({ year: 2023, month: 2, day: 29, hour: 0 }));
 });
+
+test('夏令時間：台灣 1975 年夏季自動扣 1 小時', () => {
+  const dst = Bazi.calculate({ year: 1975, month: 6, day: 1, hour: 11, minute: 30, timeZone: 'Asia/Taipei' });
+  assert.strictEqual(dst.zone.offset, 9);
+  assert.strictEqual(dst.zone.dst, true);
+  assert.strictEqual(dst.pillars.hour.branch, '巳'); // 標準時間 10:30
+  const plain = Bazi.calculate({ year: 1975, month: 6, day: 1, hour: 11, minute: 30, timezone: 8 });
+  assert.strictEqual(plain.pillars.hour.branch, '午');
+  const winter = Bazi.calculate({ year: 1975, month: 12, day: 1, hour: 11, minute: 30, timeZone: 'Asia/Taipei' });
+  assert.strictEqual(winter.zone.dst, false);
+  // 中國 1988 年夏令時間、日治時期台灣 UTC+9
+  assert.strictEqual(Bazi.zoneInfo('Asia/Shanghai', 1988, 7, 1, 12, 0).dst, true);
+  assert.strictEqual(Bazi.zoneInfo('Asia/Taipei', 1940, 6, 1, 12, 0).offset, 9);
+  // 有經度時也以正確的 UTC 偏移換算真太陽時
+  const lng = Bazi.calculate({ year: 1975, month: 6, day: 1, hour: 11, minute: 30, timeZone: 'Asia/Taipei', longitude: 121.56 });
+  assert.strictEqual(lng.pillars.hour.branch, '巳');
+});

@@ -141,3 +141,23 @@ test('格局判斷', () => {
   assert.deepStrictEqual(a.remedies.favorable.map((x) => x.element), a.strength.favorable);
   assert.match(a.profile.headline, /從財格/);
 });
+
+test('大運詳解與運勢曲線', () => {
+  const a = Bazi.analyze(sample(), { currentYear: 2026 });
+  assert.strictEqual(a.luck.length, 8);
+  const cur = a.luck.find((l) => l.current);
+  assert.strictEqual(cur.name, '丁丑');
+  assert.ok(['較順', '平穩', '起伏較大'].includes(cur.outlook));
+  assert.match(cur.summary, /前五年重天干丁/);
+  assert.ok(cur.items.length > 0 && cur.items.every((i) => i.fix));
+  assert.ok(cur.actions.length >= 2);
+  assert.strictEqual(a.curve.length, 90);
+  assert.strictEqual(a.curve[0].year, 1990);
+  assert.strictEqual(a.curve[0].luck, null);          // 起運前
+  assert.strictEqual(a.curve[36].luck, '丁丑');       // 2026
+  assert.ok(a.curve.every((p) => Math.abs(p.score) < 6));
+  // 沒有性別就沒有大運
+  const b = Bazi.analyze(Bazi.calculate({ year: 1990, month: 5, day: 15, hour: 14 }));
+  assert.strictEqual(b.luck, null);
+  assert.ok(b.curve.every((p) => p.luck === null));
+});

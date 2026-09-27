@@ -610,8 +610,9 @@
     return '半';
   }
 
-  function explainRelation(x, st) {
-    var other = x.who.filter(function (w) { return w !== '流年'; })[0];
+  function explainRelation(x, st, moving) {
+    moving = moving || '流年';
+    var other = x.who.filter(function (w) { return w !== moving; })[0];
     var isStem = x.type.indexOf('天干') === 0;
     var palace = PALACE[other];
     var where = other === '大運' ? '大運' : other + (isStem ? '干' : '支');
@@ -666,6 +667,72 @@
     return { outlook: outlook, summary: summary, items: items, mindset: advice.mindset, actions: advice.actions };
   }
 
+  // ---------- 大運詳解 ----------
+  function luckDetails(r, st, currentYear) {
+    if (!r.luckPillars) return null;
+    var ds = r.pillars.day.stemIndex;
+    var chart = chartItems(r);
+    return r.luckPillars.pillars.map(function (p) {
+      var stemEl = E[STEM_EL[p.stemIndex]], branchEl = E[BRANCH_EL[p.branchIndex]];
+      var stemFav = st.favorable.indexOf(stemEl) >= 0, branchFav = st.favorable.indexOf(branchEl) >= 0;
+      var rel = pairRelations(chart.concat([{ label: '大運', stem: p.stemIndex, branch: p.branchIndex }]))
+        .filter(function (x) { return x.who.indexOf('大運') >= 0; });
+      var items = rel.map(function (x) { return explainRelation(x, st, '大運'); });
+      var stemGod = p.tenGod, branchGod = Bazi.tenGod(ds, HIDDEN[p.branchIndex][0]);
+      var score = (stemFav ? 1 : -1) + (branchFav ? 1.5 : -1.5);
+      items.forEach(function (it) { score += it.tone === 'good' ? 0.5 : it.tone === 'bad' ? -0.5 : 0; });
+      var outlook = score >= 1.5 ? '較順' : score <= -2 ? '起伏較大' : '平穩';
+      var stage = lifeStage(ds, p.branchIndex);
+      var summary = p.startAge + '–' + (p.startAge + 9) + ' 歲行' + p.name + '運：前五年重天干' + p.stem + '（' + stemEl + '，' + stemGod + '）' +
+        (stemFav ? '為喜用' : '為忌神') + '，後五年重地支' + p.branch + '（' + branchEl + '，' + branchGod + '）' + (branchFav ? '為喜用' : '為忌神') +
+        '。日主行至「' + stage + '」之地。' + YEAR_THEME[stemGod].replace(stemGod + '年', stemGod + '運') + '。';
+      var adv = YEAR_ADVICE[stemGod];
+      var mindset = (outlook === '起伏較大' ? '這十年挑戰較多，穩紮穩打、厚積薄發；' : outlook === '較順' ? '這十年助力較多，是打基礎、衝刺的好時機；' : '') + adv.mindset;
+      var actions = adv.actions.slice();
+      if (!stemFav || !branchFav) {
+        var fav = st.favorable[0];
+        actions.push('運中' + [!stemFav ? stemEl : null, !branchFav ? branchEl : null].filter(Boolean).filter(function (e, i, a) { return a.indexOf(e) === i; }).join('、') +
+          '為忌，長期可多補' + fav + '：' + ELEMENT_REMEDY[fav].habits.split('、').slice(0, 2).join('、'));
+      }
+      return {
+        name: p.name, startAge: p.startAge, startYear: p.startYear, endYear: p.endYear,
+        stemTenGod: stemGod, branchTenGod: branchGod, stemElement: stemEl, branchElement: branchEl,
+        stage: stage, outlook: outlook, score: score, summary: summary, items: items,
+        mindset: mindset, actions: actions,
+        current: currentYear >= p.startYear && currentYear <= p.endYear
+      };
+    });
+  }
+
+  // ---------- 一生運勢曲線 ----------
+  // 每年分數 = 大運（前五年重干、後五年重支）＋ 流年五行喜忌 ＋ 流年與命盤沖合的好壞
+  function fortuneCurve(r, st, years) {
+    var chart = chartItems(r);
+    var fav = function (el) { return st.favorable.indexOf(el) >= 0 ? 1 : -1; };
+    var out = [];
+    for (var y = r.input.year; y < r.input.year + years; y++) {
+      var idx = mod(y - 4, 60), s = idx % 10, b = idx % 12;
+      var luck = r.luckPillars ? r.luckPillars.pillars.filter(function (p) { return y >= p.startYear && y <= p.endYear; })[0] : null;
+      var luckScore = 0;
+      if (luck) {
+        var early = y - luck.startYear < 5;
+        luckScore = fav(E[STEM_EL[luck.stemIndex]]) * (early ? 1.2 : 0.8) + fav(E[BRANCH_EL[luck.branchIndex]]) * (early ? 0.8 : 1.2);
+      }
+      var yearScore = fav(E[STEM_EL[s]]) * 0.6 + fav(E[BRANCH_EL[b]]) * 0.6;
+      pairRelations(chart.concat([{ label: '流年', stem: s, branch: b }])).forEach(function (x) {
+        if (x.who.indexOf('流年') < 0) return;
+        var t = explainRelation(x, st, '流年').tone;
+        yearScore += t === 'good' ? 0.3 : t === 'bad' ? -0.3 : 0;
+      });
+      out.push({
+        year: y, age: y - r.input.year, name: S[s] + B[b], luck: luck ? luck.name : null,
+        luckScore: Math.round(luckScore * 100) / 100,
+        score: Math.round((luckScore + yearScore) * 100) / 100
+      });
+    }
+    return out;
+  }
+
   // ---------- 流年 ----------
   function annualPillars(r, fromYear, count) {
     var ds = r.pillars.day.stemIndex;
@@ -706,6 +773,9 @@
   function analyze(r, opts) {
     var res = analyzeCore(r, opts);
     res.profile = profile(r, res.strength, res.tenGods, res.shensha);
+    var cy = (opts && opts.currentYear) || new Date().getFullYear();
+    res.luck = luckDetails(r, res.strength, cy);
+    res.curve = fortuneCurve(r, res.strength, (opts && opts.curveYears) || 90);
     return res;
   }
 

@@ -19,6 +19,9 @@
     --metal: #6f7680;
     --water: #245a8c;
     --focus: #245a8c;
+    --seal-soft: rgba(179, 52, 43, .07); --seal-soft2: rgba(179, 52, 43, .11);
+    --weak-2: rgba(36, 90, 140, .55); --weak-1: rgba(36, 90, 140, .25);
+    --strong-1: rgba(194, 65, 47, .25); --strong-2: rgba(194, 65, 47, .55);
     --serif: "Noto Serif TC", "Songti TC", "PMingLiU", serif;
     --sans: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
   }
@@ -28,6 +31,9 @@
       --paper: #141816; --card: #1c211e; --ink: #e5eae5; --muted: #9aa59e; --line: #2f3833;
       --seal: #e0655a; --seal-ink: #1a0f0d;
       --wood: #6cc58b; --fire: #f07a66; --earth: #d9a653; --metal: #b4bcc6; --water: #72a9e0; --focus: #72a9e0;
+      --seal-soft: rgba(224, 101, 90, .10); --seal-soft2: rgba(224, 101, 90, .16);
+      --weak-2: rgba(114, 169, 224, .55); --weak-1: rgba(114, 169, 224, .25);
+      --strong-1: rgba(240, 122, 102, .25); --strong-2: rgba(240, 122, 102, .55);
     }
   }
   :root[data-theme="dark"] {
@@ -35,6 +41,9 @@
     --paper: #141816; --card: #1c211e; --ink: #e5eae5; --muted: #9aa59e; --line: #2f3833;
     --seal: #e0655a; --seal-ink: #1a0f0d;
     --wood: #6cc58b; --fire: #f07a66; --earth: #d9a653; --metal: #b4bcc6; --water: #72a9e0; --focus: #72a9e0;
+      --seal-soft: rgba(224, 101, 90, .10); --seal-soft2: rgba(224, 101, 90, .16);
+      --weak-2: rgba(114, 169, 224, .55); --weak-1: rgba(114, 169, 224, .25);
+      --strong-1: rgba(240, 122, 102, .25); --strong-2: rgba(240, 122, 102, .55);
   }
 
   * { box-sizing: border-box; }
@@ -92,7 +101,7 @@
   .hidden-list { display: grid; gap: 2px; font-size: 13px; }
   .hidden-list span em { font-style: normal; color: var(--muted); font-size: 11px; margin-left: 4px; }
   .nayin { font-size: 13px; color: var(--muted); }
-  .col-day { background: color-mix(in srgb, var(--seal) 6%, transparent); }
+  .col-day { background: var(--seal-soft); }
 
   .e-木 { color: var(--wood); } .e-火 { color: var(--fire); } .e-土 { color: var(--earth); }
   .e-金 { color: var(--metal); } .e-水 { color: var(--water); }
@@ -125,7 +134,7 @@
   footer { font-size: 12px; color: var(--muted); }
 
   .ss { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; }
-  .ss span { font-size: 11px; padding: 0 5px; border-radius: 4px; background: color-mix(in srgb, var(--seal) 10%, transparent); color: var(--seal); white-space: nowrap; }
+  .ss span { font-size: 11px; padding: 0 5px; border-radius: 4px; background: var(--seal-soft2); color: var(--seal); white-space: nowrap; }
   .stage { font-size: 13px; }
   .none { color: var(--muted); font-size: 12px; }
 
@@ -134,7 +143,7 @@
   .verdict strong { font: 900 30px/1 var(--serif); letter-spacing: .06em; }
   .verdict span { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
   .gauge { position: relative; height: 10px; border-radius: 99px;
-    background: linear-gradient(to right, color-mix(in srgb, var(--water) 55%, transparent) 0 40%, color-mix(in srgb, var(--water) 25%, transparent) 40% 50%, color-mix(in srgb, var(--fire) 25%, transparent) 50% 60%, color-mix(in srgb, var(--fire) 55%, transparent) 60% 100%); }
+    background: linear-gradient(to right, var(--weak-2) 0%, var(--weak-2) 40%, var(--weak-1) 40%, var(--weak-1) 50%, var(--strong-1) 50%, var(--strong-1) 60%, var(--strong-2) 60%, var(--strong-2) 100%); }
   .gauge i { position: absolute; top: -5px; width: 4px; height: 20px; margin-left: -2px; border-radius: 2px; background: var(--ink); }
   .gauge-scale { display: grid; grid-template-columns: 40fr 10fr 10fr 40fr; font-size: 11px; color: var(--muted); text-align: center; margin-top: 4px; }
   .checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
@@ -169,11 +178,55 @@
   table.annual thead th { border-top: 0; font-weight: 500; color: var(--muted); font-size: 12px; letter-spacing: .08em; }
   table.annual td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
   table.annual .gz { font: 900 20px/1 var(--serif); white-space: nowrap; }
-  table.annual tr.now td { background: color-mix(in srgb, var(--seal) 7%, transparent); }
+  table.annual tr.now td { background: var(--seal-soft); }
   .tags { display: flex; flex-wrap: wrap; gap: 4px; }
   .tags span { font-size: 12px; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--line); white-space: nowrap; }
   .tags span.t-沖, .tags span.t-太歲 { border-color: var(--fire); color: var(--fire); }
   .tags span.t-合 { border-color: var(--wood); color: var(--wood); }
+
+  .actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px; }
+  .actions button { flex: 1 1 120px; }
+  button.ghost { color: var(--ink); background: transparent; border: 1px solid var(--line); letter-spacing: .06em; }
+  button.ghost:hover { filter: none; border-color: var(--ink); }
+  button:disabled { opacity: .5; cursor: progress; }
+  .status { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--muted); min-height: 1.4em; }
+  .status.ok { color: var(--wood); } .status.bad { color: var(--fire); }
+
+  .saved-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .saved-head small { color: var(--muted); font-size: 12px; }
+  .saved { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .saved li { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  .saved li.active { border-color: var(--seal); }
+  .saved .who { min-width: 0; }
+  .saved .who b { display: block; font: 700 15px var(--serif); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .saved .who span { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .saved button { font-size: 13px; letter-spacing: 0; min-height: 34px; padding: 0 12px; }
+  .saved button.danger { color: var(--fire); border-color: var(--fire); }
+
+  .report-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+  .report-head b { font: 900 22px/1.2 var(--serif); letter-spacing: .04em; }
+  .report-head span { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+
+  /* PDF 輸出用：離屏、固定寬度、一律淺色 */
+  .pdf-sheet {
+    position: absolute; left: -10000px; top: 0; width: 820px; padding: 8px;
+    color-scheme: light;
+    --paper: #ffffff; --card: #ffffff; --ink: #1c2320; --muted: #5d6862; --line: #d5dbd5;
+    --seal: #b3342b; --seal-ink: #ffffff;
+    --wood: #2f7d4a; --fire: #c2412f; --earth: #9a6b1f; --metal: #6f7680; --water: #245a8c;
+    --seal-soft: rgba(179, 52, 43, .07); --seal-soft2: rgba(179, 52, 43, .11);
+    --weak-2: rgba(36, 90, 140, .55); --weak-1: rgba(36, 90, 140, .25);
+    --strong-1: rgba(194, 65, 47, .25); --strong-2: rgba(194, 65, 47, .55);
+    background: var(--paper); color: var(--ink); font: 15px/1.6 var(--sans);
+  }
+  .pdf-sheet > * + * { margin-top: 24px; }
+  .pdf-sheet .chart { grid-template-columns: 44px repeat(4, 1fr); }
+  .pdf-sheet .chart > .rowlabel { writing-mode: horizontal-tb; }
+  .pdf-sheet .glyph { font-size: 52px; }
+  .pdf-sheet .luck-wrap, .pdf-sheet .table-wrap { overflow: visible; }
+  .pdf-sheet .luck > div.now { box-shadow: none; border-width: 2px; }
+  .pdf-sheet table.annual td:not(:last-child), .pdf-sheet table.annual th { white-space: nowrap; }
+  .pdf-sheet .pdf-foot { font-size: 12px; color: var(--muted); margin: 0; }
 
   @media (max-width: 480px) {
     .chart { grid-template-columns: 30px repeat(4, 1fr); }
@@ -191,6 +244,7 @@
   </header>
 
   <form id="f" novalidate>
+    <label>命主姓名（選填）<input id="name" type="text" maxlength="40" placeholder="例：王小明" autocomplete="off"></label>
     <label>出生日期（國曆）<input id="date" type="date" required value="1990-05-15"></label>
     <label>出生時間<input id="time" type="time" required value="14:30"></label>
     <label>性別
@@ -210,9 +264,20 @@
     </label>
     <label>出生地經度（選填）<input id="lng" type="number" step="0.01" min="-180" max="180" placeholder="例：台北 121.56" value="121.56"></label>
     <label class="check"><input id="zi" type="checkbox"> 晚子時（23 點後）仍算當日</label>
-    <button type="submit">排盤</button>
+    <div class="actions">
+      <button type="submit">排盤</button>
+      <button type="button" class="ghost" id="saveBtn">儲存命盤</button>
+      <button type="button" class="ghost" id="pdfBtn">匯出 PDF</button>
+    </div>
     <p class="error" id="err" hidden></p>
+    <p class="status" id="status" role="status"></p>
   </form>
+
+  <section id="savedSec" aria-label="我的命盤">
+    <div class="saved-head"><h2>我的命盤</h2><small id="storeNote">存在這個瀏覽器</small></div>
+    <ul class="saved" id="savedList"></ul>
+    <p class="note" id="savedEmpty">還沒有儲存的命盤。排好盤後按「儲存命盤」，之後可在這裡一鍵開啟。</p>
+  </section>
 
   <section id="out" aria-live="polite"></section>
 
@@ -224,9 +289,10 @@
     <p>大運採陽男陰女順行、陰男陽女逆行，以出生到前後一節的天數「三天折一年」推算起運歲數。歲數為實歲。</p>
     <p>日主強弱以加權計分估算：月令地支權重 3，其他地支 1.2（藏干依本氣、中氣、餘氣分配），天干各 1；生扶日主的五行（印、比劫）占比 60% 以上為身強，50–60% 偏強，40–50% 偏弱，40% 以下身弱。喜用神採扶抑法，未處理從格、化氣格等特殊格局。</p>
     <p>神煞只列常見幾種：天乙貴人、文昌、祿神、羊刃看日干；桃花、驛馬、華蓋、將星看年支與日支；紅鸞、天喜看年支；空亡以日柱所在旬推算。</p>
+    <p>「儲存命盤」會把輸入資料存到你的 claude.ai 帳號，只有你自己看得到；無法使用帳號儲存時，改存在目前的瀏覽器。「匯出 PDF」會把目前的命盤與分析轉成 A4 PDF 檔。</p>
     <p>分析文字為傳統命理的通用說法，只是規則推算，並非對個人的判斷，結果僅供參考與娛樂。</p>
   </details>
-  <footer>頁面預載的是範例資料，請換成你自己的出生資訊後按「排盤」。</footer>
+  <footer>頁面預載的是範例資料，請換成你自己的出生資訊後按「排盤」，再按「儲存命盤」留存或「匯出 PDF」下載。</footer>
 </main>
 
 <script src="bazi.js"></script>
@@ -244,8 +310,12 @@
     var P = r.pillars, h = '';
     var A = Bazi.analyze(r);
     var ST = A.strength;
+    var nm = $('name').value.trim();
+    h += '<div class="report-head"><b>' + (nm ? esc(nm) : '八字命盤') + '</b><span>國曆 ' + fmt(r.input) + '（UTC' + (r.input.timezone >= 0 ? '+' : '') + r.input.timezone + '）</span>' +
+      '<span>' + (r.input.gender === 'male' ? '男' : '女') + '命</span>' +
+      '<span>' + P.year.name + ' ' + P.month.name + ' ' + P.day.name + ' ' + P.hour.name + '</span></div>';
 
-    h += '<div class="summary">';
+    h += '<div class="summary" style="margin-top:12px">';
     h += '<span>日主 <b class="e-' + r.dayMaster.element + '">' + r.dayMaster.stem + '</b>（' + r.dayMaster.yinYang + r.dayMaster.element + '）</span>';
     h += '<span>生肖 <b>' + r.zodiac + '</b></span>';
     if (r.solarTime) h += '<span>真太陽時 <b>' + fmt(r.solarTime.time) + '</b>（' + (r.solarTime.offsetMinutes >= 0 ? '+' : '') + r.solarTime.offsetMinutes.toFixed(1) + ' 分）</span>';
@@ -369,10 +439,12 @@
     $('out').innerHTML = h;
   }
 
+  var lastOk = false;
   function run(e) {
     if (e) e.preventDefault();
     var err = $('err');
     err.hidden = true;
+    lastOk = false;
     var d = $('date').value, t = $('time').value;
     if (!d || !t) { err.textContent = '請填入出生日期與時間。'; err.hidden = false; return; }
     var dp = d.split('-').map(Number), tp = t.split(':').map(Number);
@@ -383,12 +455,257 @@
         longitude: $('lng').value === '' ? null : +$('lng').value,
         lateZiNextDay: !$('zi').checked
       }));
+      lastOk = true;
     } catch (ex) {
-      err.textContent = esc(ex.message) + '，請確認輸入。';
+      err.textContent = ex.message + '，請確認輸入。';
       err.hidden = false;
     }
   }
   $('f').addEventListener('submit', run);
+
+  var statusTimer;
+  function status(text, kind) {
+    var el = $('status');
+    el.textContent = text;
+    el.className = 'status' + (kind ? ' ' + kind : '');
+    clearTimeout(statusTimer);
+    if (kind === 'ok') statusTimer = setTimeout(function () { el.textContent = ''; }, 5000);
+  }
+
+  // ---------- 命盤儲存 ----------
+  // 優先存到 claude.ai 帳號下的私人資料（僅本人可見），不可用時改存在此瀏覽器。
+  var LS_KEY = 'bazi.savedCharts.v1';
+  var charts = [];
+  var remote = null; // 帳號儲存的 collection
+  var activeId = null;
+
+  function readLocal() {
+    try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch (e) { return []; }
+  }
+  function writeLocal(list) {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(list)); return true; } catch (e) { return false; }
+  }
+  charts = readLocal();
+
+  function formState() {
+    return {
+      name: $('name').value.trim(), date: $('date').value, time: $('time').value,
+      gender: $('gender').value, tz: $('tz').value, lng: $('lng').value, zi: $('zi').checked,
+      savedAt: Date.now()
+    };
+  }
+  function applyState(c) {
+    $('name').value = c.name || '';
+    $('date').value = c.date; $('time').value = c.time;
+    $('gender').value = c.gender; $('tz').value = String(c.tz);
+    $('lng').value = c.lng == null ? '' : c.lng; $('zi').checked = !!c.zi;
+  }
+  function label(c) {
+    return c.name || (c.date + ' ' + (c.gender === 'male' ? '男' : '女'));
+  }
+
+  function renderSaved() {
+    var list = charts.slice().sort(function (a, b) { return (b.savedAt || 0) - (a.savedAt || 0); });
+    $('savedEmpty').hidden = list.length > 0;
+    var ul = $('savedList');
+    ul.textContent = '';
+    list.forEach(function (c) {
+      var li = document.createElement('li');
+      if (c.id === activeId) li.className = 'active';
+      var who = document.createElement('div');
+      who.className = 'who';
+      var b = document.createElement('b'); b.textContent = label(c);
+      var sp = document.createElement('span');
+      sp.textContent = c.date + ' ' + c.time + '・' + (c.gender === 'male' ? '男' : '女') + (c.pillars ? '・' + c.pillars : '');
+      who.appendChild(b); who.appendChild(sp);
+      var open = document.createElement('button');
+      open.type = 'button'; open.className = 'ghost'; open.textContent = '開啟';
+      open.addEventListener('click', function () {
+        applyState(c); activeId = c.id; run(); renderSaved();
+        status('已開啟「' + label(c) + '」', 'ok');
+        $('out').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      var del = document.createElement('button');
+      del.type = 'button'; del.className = 'ghost'; del.textContent = '刪除';
+      del.addEventListener('click', function () {
+        if (del.dataset.confirm !== '1') {
+          del.dataset.confirm = '1'; del.textContent = '確定刪除？'; del.classList.add('danger');
+          setTimeout(function () { if (del.isConnected) { del.dataset.confirm = ''; del.textContent = '刪除'; del.classList.remove('danger'); } }, 4000);
+          return;
+        }
+        removeChart(c);
+      });
+      li.appendChild(who); li.appendChild(open); li.appendChild(del);
+      ul.appendChild(li);
+    });
+  }
+
+  function newId() { return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+  function saveChart() {
+    run();
+    if (!lastOk) { status('排盤失敗，請先修正輸入再儲存。', 'bad'); return; }
+    var c = formState();
+    var p = document.querySelector('.report-head span:last-child');
+    c.pillars = p ? p.textContent : '';
+    // 同名同生日視為同一張，更新而不重複
+    var same = charts.filter(function (x) { return x.date === c.date && x.time === c.time && (x.name || '') === c.name && x.gender === c.gender; })[0];
+    c.id = same ? same.id : newId();
+    if (remote) {
+      var data = Object.assign({}, c); delete data.id;
+      remote.doc(c.id).set(data).then(function () {
+        activeId = c.id; status('已儲存「' + label(c) + '」到你的帳號', 'ok');
+      }, function () {
+        saveLocal(c, '無法存到帳號，已改存在這個瀏覽器');
+      });
+    } else {
+      saveLocal(c);
+    }
+  }
+  function saveLocal(c, msg) {
+    var list = readLocal().filter(function (x) { return x.id !== c.id; });
+    list.push(c);
+    if (!writeLocal(list)) { status('這個瀏覽器不允許儲存資料（可能是私密瀏覽模式）。', 'bad'); return; }
+    if (!remote) charts = list;
+    activeId = c.id; renderSaved();
+    status(msg || '已儲存「' + label(c) + '」', msg ? 'bad' : 'ok');
+  }
+  function removeChart(c) {
+    if (remote && !c.local) {
+      remote.doc(c.id).delete().then(function () { status('已刪除「' + label(c) + '」', 'ok'); },
+        function () { status('刪除失敗，請稍後再試。', 'bad'); });
+    } else {
+      charts = readLocal().filter(function (x) { return x.id !== c.id; });
+      writeLocal(charts); renderSaved();
+      status('已刪除「' + label(c) + '」', 'ok');
+    }
+  }
+  $('saveBtn').addEventListener('click', saveChart);
+
+  function connectAccount() {
+    if (!window.claude || !window.claude.use) return;
+    Promise.all([window.claude.use('db'), window.claude.use('user')]).then(function (caps) {
+      var db = caps[0], user = caps[1];
+      if (!db || !user) return null;
+      return user.id().then(function (uid) {
+        if (!uid) return;
+        var col = db.doc('data/users/' + uid + '/profile').collection('charts');
+        col.onSnapshot(function (snap) {
+          remote = col;
+          var local = readLocal().map(function (x) { return Object.assign({ local: true }, x); });
+          charts = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }).concat(local);
+          $('storeNote').textContent = '存在你的帳號，只有你看得到' + (local.length ? '（另有 ' + local.length + ' 筆存在此瀏覽器）' : '');
+          renderSaved();
+        }, function () {
+          remote = null; charts = readLocal(); renderSaved();
+          $('storeNote').textContent = '存在這個瀏覽器';
+        });
+      });
+    }).catch(function () {});
+  }
+
+  // ---------- 匯出 PDF ----------
+  var LIBS = [
+    'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
+  ];
+  var libsPromise = null;
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      var el = document.createElement('script');
+      el.src = src; el.onload = resolve;
+      el.onerror = function () { reject(new Error('無法載入 ' + src)); };
+      document.head.appendChild(el);
+    });
+  }
+  function loadLibs() {
+    if (!libsPromise) {
+      libsPromise = LIBS.reduce(function (p, src) { return p.then(function () { return loadScript(src); }); }, Promise.resolve())
+        .catch(function (e) { libsPromise = null; throw e; });
+    }
+    return libsPromise;
+  }
+
+  function fileName() {
+    var nm = $('name').value.trim().replace(/[\\/:*?"<>|]/g, '') || '八字命盤';
+    return nm + '-' + $('date').value + '.pdf';
+  }
+
+  function deliver(blob, name) {
+    var viaClaude = window.claude && window.claude.use ? window.claude.use('downloads') : Promise.resolve(null);
+    return viaClaude.then(function (dl) {
+      if (dl) {
+        return dl.save({ filename: name, data: blob }).then(function (res) {
+          return res.status === 'delivered' ? '已送出 PDF' : '已儲存 ' + name;
+        }, function (e) {
+          if (e && e.code === 'declined') return null;
+          throw new Error(e && e.code === 'rate_limited' ? '已有一個儲存視窗開著，請先處理它。' : '這裡無法下載檔案。');
+        });
+      }
+      // 本機直接開啟 index.html 時
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
+      return '已下載 ' + name;
+    });
+  }
+
+  function exportPdf() {
+    run();
+    if (!lastOk) { status('排盤失敗，請先修正輸入再匯出。', 'bad'); return; }
+    var btn = $('pdfBtn');
+    btn.disabled = true;
+    status('正在產生 PDF…');
+    var sheet;
+    loadLibs().then(function () {
+      return document.fonts && document.fonts.ready;
+    }).then(function () {
+      sheet = document.createElement('div');
+      sheet.className = 'pdf-sheet';
+      sheet.setAttribute('aria-hidden', 'true');
+      sheet.innerHTML = $('out').innerHTML;
+      var foot = document.createElement('p');
+      foot.className = 'pdf-foot';
+      foot.textContent = '以四柱八字排盤產生於 ' + new Date().toLocaleDateString('zh-TW') + '。分析為傳統命理規則推算，僅供參考。';
+      sheet.appendChild(foot);
+      document.body.appendChild(sheet);
+
+      var jsPDF = window.jspdf.jsPDF;
+      var pdf = new jsPDF({ unit: 'pt', format: 'a4' });
+      var pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight();
+      var m = 32, cw = pw - m * 2, y = m;
+      var blocks = Array.prototype.slice.call(sheet.children);
+      // 逐區塊轉圖，放不下就換頁，避免把表格切成兩半
+      return blocks.reduce(function (p, el) {
+        return p.then(function () {
+          return html2canvas(el, { scale: 2, backgroundColor: '#ffffff', logging: false }).then(function (cv) {
+            var w = cw, h = cv.height * cw / cv.width;
+            if (h > ph - m * 2) { h = ph - m * 2; w = cv.width * h / cv.height; }
+            if (y + h > ph - m && y > m) {
+              pdf.addPage(); y = m;
+            }
+            pdf.addImage(cv.toDataURL('image/jpeg', 0.92), 'JPEG', m, y, w, h);
+            y += h + 14;
+          });
+        });
+      }, Promise.resolve()).then(function () { return pdf.output('blob'); });
+    }).then(function (blob) {
+      return deliver(blob, fileName());
+    }).then(function (msg) {
+      status(msg || '已取消下載。', msg ? 'ok' : '');
+    }).catch(function (e) {
+      status('匯出失敗：' + (e && e.message ? e.message : '請稍後再試。'), 'bad');
+    }).then(function () {
+      if (sheet) sheet.remove();
+      btn.disabled = false;
+    });
+  }
+  $('pdfBtn').addEventListener('click', exportPdf);
+
   run();
+  renderSaved();
+  connectAccount();
 })();
 </script>

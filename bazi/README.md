@@ -2,9 +2,18 @@
 
 輸入國曆出生日期與時間，排出四柱八字（年、月、日、時柱），並附上十神、藏干、納音、五行統計、所在節令與大運。
 
+命盤分析（`analysis.js`）另提供：
+
+- 日主強弱（得令／得地／得勢加權評分）與扶抑喜用神、調候提示
+- 十二長生、空亡、胎元
+- 干支關係：天干五合／相沖，地支六合、三合、半合、三會、六沖、相刑、六害、相破
+- 神煞：天乙貴人、文昌、祿神、羊刃、桃花、驛馬、華蓋、將星、紅鸞、天喜、魁罡
+- 日主性格與十神分布說明
+- 未來十年流年：干支、十神、所行大運、與命盤及大運的沖合、值／沖太歲
+
 ## 使用方式
 
-**網頁版**：用瀏覽器直接打開 `index.html`（需與 `bazi.js` 放在同一資料夾）。
+**網頁版**：用瀏覽器直接打開 `index.html`（需與 `bazi.js`、`analysis.js` 放在同一資料夾）。
 
 **命令列**（需要 Node.js）：
 
@@ -25,7 +34,14 @@ node cli.js 1990-05-15 14:30 --gender female --lng 121.5
 const Bazi = require('./bazi.js');
 const r = Bazi.calculate({ year: 1990, month: 5, day: 15, hour: 14, minute: 30, gender: 'female' });
 console.log(r.pillars.year.name, r.pillars.month.name, r.pillars.day.name, r.pillars.hour.name);
+
+// 命盤分析
+const BaziFull = require('./analysis.js');
+const a = BaziFull.analyze(r, { currentYear: 2026 });
+console.log(a.strength.level, a.strength.favorable, a.relations, a.annual);
 ```
+
+日主強弱與喜用神採簡化的扶抑法計分，不處理從格、化氣格等特殊格局；分析文字為傳統命理的通用說法，僅供參考。
 
 ## 計算規則
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 // 用法：node cli.js 1990-05-15 14:30 [--gender male|female] [--tz 8] [--lng 121.5] [--zi-same-day]
-const Bazi = require('./bazi.js');
+const Bazi = require('./analysis.js');
 
 function usage() {
   console.log('用法：node cli.js YYYY-MM-DD HH:MM [--gender male|female] [--tz 時區] [--lng 經度] [--zi-same-day]');
@@ -40,14 +40,42 @@ console.log('天干　' + keys.map((k) => col(r.pillars[k].stem + r.pillars[k].s
 console.log('地支　' + keys.map((k) => col(r.pillars[k].branch + r.pillars[k].branchElement)).join(''));
 console.log('藏干　' + keys.map((k) => col(r.pillars[k].hiddenStems.map((x) => x.stem).join(''))).join(''));
 console.log('納音　' + keys.map((k) => col(r.pillars[k].nayin)).join(''));
+const a = Bazi.analyze(r);
+console.log('長生　' + keys.map((k) => col(a.lifeStages[k])).join(''));
+console.log('神煞　' + keys.map((k) => col(a.shensha[k].join(' ') || '—')).join(''));
 
 console.log('\n五行（干支）：' + Object.entries(r.elementCounts).map(([e, n]) => `${e}${n}`).join(' '));
 console.log('五行（含藏干）：' + Object.entries(r.elementCountsWithHidden).map(([e, n]) => `${e}${n}`).join(' '));
 console.log(`\n節氣：${r.solarTerms.previous.name} ${fmt(r.solarTerms.previous.time)} → ${r.solarTerms.next.name} ${fmt(r.solarTerms.next.time)}`);
+
+const st = a.strength;
+console.log(`\n【日主強弱】${st.level}（生扶力量占 ${(st.ratio * 100).toFixed(0)}%）`);
+console.log(`  ${st.deLingText}；${st.deDiText}；${st.deShiText}`);
+console.log(`  喜用：${st.favorable.join('、')}　忌：${st.unfavorable.join('、')}　（${st.reason}）`);
+if (st.climate) console.log(`  調候：${st.climate.text}`);
+if (a.missingElements.length) console.log(`  五行缺：${a.missingElements.join('、')}`);
+console.log(`\n【日主】${a.dayMasterNote}`);
+if (a.tenGods.prominent.length) {
+  console.log('【十神較旺】' + a.tenGods.prominent.map((g) => `${g.name}（${g.note}）`).join('；'));
+}
+console.log(`\n【空亡】${a.kongwang.branches.join('')}${a.kongwang.pillars.length ? '（' + a.kongwang.pillars.join('、') + '落空亡）' : ''}　【胎元】${a.taiyuan}`);
+console.log('【干支關係】' + (a.relations.length ? '' : '無'));
+a.relations.forEach((x) => console.log(`  ${x.who.join('–')}：${x.text}`));
+const allSs = [...new Set(keys.flatMap((k) => a.shensha[k]))];
+if (allSs.length) {
+  console.log('【神煞說明】');
+  allSs.forEach((n) => console.log(`  ${n}：${a.shenshaNotes[n]}`));
+}
 
 if (r.luckPillars) {
   const lp = r.luckPillars;
   console.log(`\n大運（${lp.direction}，${lp.startAge.years} 歲 ${lp.startAge.months} 個月起運，約 ${lp.startDate.year}-${pad(lp.startDate.month)}）`);
   console.log(lp.pillars.map((p) => `${p.startAge}歲 ${p.name}（${p.startYear}）`).join('\n'));
 }
+
+console.log('\n流年：');
+a.annual.forEach((y) => {
+  const extra = [y.taiSui, ...y.relations.map((x) => x.who.filter((w) => w !== '流年').join('') + x.text)].filter(Boolean);
+  console.log(`${y.year} ${y.name}（${y.stemTenGod}／${y.branchTenGod}）${y.luck ? '運' + y.luck : ''}${extra.length ? '：' + extra.join('、') : ''}`);
+});
 console.log();

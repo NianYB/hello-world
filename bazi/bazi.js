@@ -273,7 +273,7 @@
     var pillars = {
       year: makePillar(yearIdx, dayStem),
       month: makePillar(monthIdx, dayStem),
-      day: makePillar(dayIdx, null),
+      day: makePillar(dayIdx, dayStem),
       hour: makePillar(hourIdx, dayStem)
     };
     pillars.day.tenGod = '日主';
@@ -350,6 +350,7 @@
     STEMS: STEMS, BRANCHES: BRANCHES, ELEMENTS: ELEMENTS, ZODIAC: ZODIAC,
     calculate: calculate,
     tenGod: tenGod,
+    ganzhiIndex: ganzhiIndex,
     sunLongitude: sunLongitudeUT,
     findSolarTerm: findSolarTerm,
     equationOfTime: equationOfTime,

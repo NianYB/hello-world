@@ -269,6 +269,116 @@
     '癸水如雨露細流，溫柔內秀、想像豐富，善於感受。'
   ];
 
+  // ---------- 命盤總覽：個人特質與工作建議 ----------
+  var DAY_MASTER_PROFILE = [
+    { title: '正直向上的開拓者', strengths: ['正直有擔當', '上進心強', '具領導力與規劃能力'], blind: ['固執、不易轉彎', '自尊心強，不輕易認錯'] },
+    { title: '柔韌靈活的協調者', strengths: ['善於協調與溝通', '適應力強', '有美感與藝術天分'], blind: ['容易猶豫不決', '在意他人看法、想太多'] },
+    { title: '熱情外放的發光者', strengths: ['熱情大方、樂觀開朗', '感染力強、善於帶動氣氛', '行動積極'], blind: ['性子急、易衝動', '愛面子、三分鐘熱度'] },
+    { title: '細膩溫暖的洞察者', strengths: ['心思細密、觀察入微', '溫暖體貼', '有洞察力與專注力'], blind: ['敏感多慮', '情緒起伏藏在心裡'] },
+    { title: '穩重可靠的守護者', strengths: ['穩重守信', '包容力強、值得信賴', '做事有定力'], blind: ['較保守、固執', '反應與變通偏慢'] },
+    { title: '務實體貼的耕耘者', strengths: ['謙和務實', '善於照顧人', '多才多藝、學習力好'], blind: ['心思重、容易多疑', '有時不夠果斷'] },
+    { title: '剛毅果斷的行動派', strengths: ['果斷有魄力', '講義氣、重承諾', '執行力強'], blind: ['說話直、易得罪人', '衝動、不喜被管'] },
+    { title: '精緻敏銳的完美主義者', strengths: ['品味好、重細節', '敏銳聰慧', '自我要求高'], blind: ['挑剔、標準高', '敏感、愛面子'] },
+    { title: '聰明豁達的謀略家', strengths: ['聰明反應快', '眼界開闊、有謀略', '適應力強'], blind: ['善變、缺乏耐性', '不喜拘束'] },
+    { title: '溫柔內秀的感受者', strengths: ['溫柔細膩', '想像力與直覺強', '善解人意'], blind: ['容易悲觀多愁', '有時缺乏主見'] }
+  ];
+
+  var GOD_GROUPS = [
+    { name: '比劫', members: ['比肩', '劫財'],
+      trait: '獨立自主、重義氣，好勝心與執行力強',
+      blind: '容易固執己見，花錢大方',
+      career: { title: '創業與團隊型工作', jobs: '自行創業、合夥事業、業務與銷售團隊、運動體能相關、自由業', why: '比劫旺的人靠自己的力量衝刺，適合能獨立作主、靠團隊拚業績的環境' },
+      lack: '比劫少，較少依靠同輩助力，宜多培養自信與人脈' },
+    { name: '食傷', members: ['食神', '傷官'],
+      trait: '聰明有才華，表達力強，追求自由與創意',
+      blind: '不喜拘束，說話直接易得罪人',
+      career: { title: '創意與專業技術', jobs: '設計、藝術創作、寫作、講師、行銷企劃、餐飲、技術研發、自媒體', why: '食傷是才華與輸出，適合能發揮創意、以作品或技術說話的工作' },
+      lack: '食傷少，表達較含蓄，可多練習把想法說出來' },
+    { name: '財星', members: ['偏財', '正財'],
+      trait: '務實重效率，對金錢與資源敏感，善交際',
+      blind: '較重物質成果，容易忙碌操勞',
+      career: { title: '商業與財務', jobs: '商業經營、業務開發、金融理財、貿易、會計、電商', why: '財星是掌握資源的能力，適合以成果、業績或數字衡量的工作' },
+      lack: '財星少，對金錢較不敏感，宜學習記帳與理財' },
+    { name: '官殺', members: ['七殺', '正官'],
+      trait: '有責任感、自律，重名譽，具管理與領導能力',
+      blind: '給自己的壓力大，容易緊繃、在意評價',
+      career: { title: '管理與制度型工作', jobs: '管理職、公職、軍警、法律、大型企業、專案管理', why: '官殺是規範與權責，適合有制度、有升遷路徑、需要擔責任的位置' },
+      lack: '官殺少，不喜受約束，較適合彈性、自主的工作型態' },
+    { name: '印星', members: ['偏印', '正印'],
+      trait: '好學、善良有包容力，思考深，重精神層面',
+      blind: '想得多做得少，有時依賴心較重',
+      career: { title: '教育研究與助人', jobs: '教育、研究、學術、醫療、社工、心理諮商、顧問、出版', why: '印星是學問與庇護，適合需要知識累積、照顧或指導他人的工作' },
+      lack: '印星少，較少長輩庇蔭，宜主動進修、找導師' }
+  ];
+
+  var SHENSHA_PROFILE = {
+    '魁罡': { trait: '個性剛烈果斷，遇事有魄力', job: '執法、軍警、決策與領導職' },
+    '華蓋': { trait: '喜歡獨處思考，有藝術或宗教哲學天分', job: '藝術、宗教、玄學、研究' },
+    '文昌': { trait: '聰明好學，文筆與考運佳', job: '文書、學術、考試與證照相關' },
+    '驛馬': { trait: '喜歡變化與移動，待不住一成不變的環境', job: '外勤、旅遊、物流、跨國或跨區工作' },
+    '桃花': { trait: '人緣好、有親和力', job: '服務業、公關、美容時尚、演藝' },
+    '將星': { trait: '有領導力與號召力', job: '管理與帶領團隊' },
+    '天乙貴人': { trait: '人緣佳，關鍵時常有貴人相助', job: null },
+    '羊刃': { trait: '衝勁強、敢拚，但要注意脾氣', job: '需要膽識的工作，如外科、技術、競技' }
+  };
+
+  function profile(r, st, tg, ss) {
+    var ds = r.pillars.day.stemIndex;
+    var base = DAY_MASTER_PROFILE[ds];
+    var groups = GOD_GROUPS.map(function (g) {
+      return { g: g, count: g.members.reduce(function (n, m) { return n + tg.counts[m]; }, 0) };
+    });
+    var ranked = groups.slice().sort(function (a, b) { return b.count - a.count; });
+    var top = ranked.filter(function (x, i) { return i === 0 || (i === 1 && x.count >= 2); });
+    var missing = groups.filter(function (x) { return x.count === 0; });
+
+    var strong = st.ratio >= 0.5;
+    var traits = [DAY_MASTER_NOTES[ds]];
+    traits.push(strong
+      ? '日主' + st.level + '，能量充足、主見強、抗壓性好，遇事傾向自己扛起來。'
+      : '日主' + st.level + '，心思細膩、善於觀察與配合，懂得借力使力，但要留意體力與情緒的消耗。');
+    top.forEach(function (x) { traits.push('命中' + x.g.name + '較旺（' + x.count + '），' + x.g.trait + '。'); });
+
+    var allSs = [];
+    POS.forEach(function (k) { ss[k].forEach(function (n) { if (allSs.indexOf(n) < 0) allSs.push(n); }); });
+    var ssTraits = allSs.filter(function (n) { return SHENSHA_PROFILE[n]; }).map(function (n) { return n + '：' + SHENSHA_PROFILE[n].trait; });
+
+    var blind = base.blind.concat(top.map(function (x) { return x.g.blind; }));
+    missing.forEach(function (x) { blind.push(x.g.lack); });
+
+    var careers = top.map(function (x) { return { title: x.g.career.title, jobs: x.g.career.jobs, why: x.g.career.why }; });
+    var fav = st.favorable.slice(0, 2);
+    careers.push({
+      title: '喜用五行的領域',
+      jobs: fav.map(function (e) { return ELEMENT_REMEDY[e].fields; }).join('；'),
+      why: '喜用為' + fav.join('、') + '，從事相關五行的行業較能順勢而為'
+    });
+    var ssJobs = allSs.filter(function (n) { return SHENSHA_PROFILE[n] && SHENSHA_PROFILE[n].job; });
+    if (ssJobs.length) {
+      careers.push({
+        title: '神煞加分',
+        jobs: ssJobs.map(function (n) { return SHENSHA_PROFILE[n].job; }).join('；'),
+        why: '命帶' + ssJobs.join('、') + '，在這些方向容易發揮特長'
+      });
+    }
+
+    var workStyle = strong
+      ? '適合能獨當一面、自己作主的角色，例如負責人、主管、創業或專案領導；工作上給自己挑戰，但記得聽取團隊意見。'
+      : '適合在穩定的平台或團隊中發揮專長，跟對主管與夥伴很重要；選擇工作時重視環境與支持系統，避免長期高壓單打獨鬥。';
+
+    return {
+      title: base.title,
+      headline: S[ds] + E[STEM_EL[ds]] + '日主・' + st.level + '・' + top.map(function (x) { return x.g.name; }).join('與') + '較旺',
+      traits: traits,
+      shenshaTraits: ssTraits,
+      strengths: base.strengths,
+      blindSpots: blind,
+      careers: careers,
+      workStyle: workStyle,
+      groups: groups.map(function (x) { return { name: x.g.name, count: x.count }; })
+    };
+  }
+
   // ---------- 流年詳解 ----------
   var PALACE = {
     '年': { stem: '年干代表祖上與長輩', branch: '年支是祖業與家族根基，也代表早年環境', short: '長輩、家族' },
@@ -497,6 +607,12 @@
   }
 
   function analyze(r, opts) {
+    var res = analyzeCore(r, opts);
+    res.profile = profile(r, res.strength, res.tenGods, res.shensha);
+    return res;
+  }
+
+  function analyzeCore(r, opts) {
     opts = opts || {};
     var currentYear = opts.currentYear || new Date().getFullYear();
     var P = r.pillars;
@@ -524,6 +640,7 @@
       tenGods: tenGodSummary(r),
       dayMasterNote: DAY_MASTER_NOTES[P.day.stemIndex],
       remedies: remedies(strength(r)),
+      profile: null,
       missingElements: missingElements,
       annual: annualPillars(r, opts.annualFrom || currentYear, opts.annualCount || 10)
     };

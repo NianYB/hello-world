@@ -36,6 +36,17 @@ const col = (s) => s + '　'.repeat(Math.max(0, 6 - s.length));
 console.log(`\n出生時間：${fmt(r.input)}（UTC${r.input.timezone >= 0 ? '+' : ''}${r.input.timezone}）`);
 if (r.solarTime) console.log(`真太陽時：${fmt(r.solarTime.time)}（經度 ${r.solarTime.longitude}°，校正 ${r.solarTime.offsetMinutes.toFixed(1)} 分）`);
 console.log(`生肖：${r.zodiac}　日主：${r.dayMaster.stem}（${r.dayMaster.yinYang}${r.dayMaster.element}）\n`);
+{
+  const pf = Bazi.analyze(r).profile;
+  console.log(`【命盤總覽】${pf.title}（${pf.headline}）`);
+  pf.traits.forEach((t) => console.log('  ' + t));
+  if (pf.shenshaTraits.length) console.log('  ' + pf.shenshaTraits.join('；'));
+  console.log(`  優勢：${pf.strengths.join('、')}`);
+  console.log(`  要留意：${pf.blindSpots.join('；')}`);
+  console.log('【工作類型建議】' + pf.workStyle);
+  pf.careers.forEach((c) => console.log(`  ・${c.title}：${c.jobs}（${c.why}）`));
+  console.log();
+}
 console.log('　　　' + ['年柱', '月柱', '日柱', '時柱'].map(col).join(''));
 console.log('十神　' + keys.map((k) => col(r.pillars[k].tenGod)).join(''));
 console.log('天干　' + keys.map((k) => col(r.pillars[k].stem + r.pillars[k].stemElement)).join(''));

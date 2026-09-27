@@ -102,3 +102,18 @@ test('化解與建議', () => {
   const y2030 = a.annual.find((x) => x.year === 2030); // 辰戌沖日支
   assert.ok(y2030.detail.actions.some((t) => /夫妻宮/.test(t)));
 });
+
+test('命盤總覽：個人特質與工作建議', () => {
+  const a = Bazi.analyze(sample(), { currentYear: 2026 });
+  const pf = a.profile;
+  assert.strictEqual(pf.title, '剛毅果斷的行動派'); // 庚金
+  assert.match(pf.headline, /^庚金日主・偏強・/);
+  assert.strictEqual(pf.groups.length, 5);
+  assert.ok(pf.careers.length >= 2);
+  assert.ok(pf.careers.some((c) => c.title === '喜用五行的領域' && /教育/.test(c.jobs))); // 喜用木
+  assert.ok(pf.shenshaTraits.some((t) => /^魁罡/.test(t)));
+  // 身弱且無財星的命盤：提到平台型工作與理財
+  const b = Bazi.analyze(Bazi.calculate({ year: 1980, month: 3, day: 20, hour: 17 })).profile;
+  assert.match(b.workStyle, /平台或團隊/);
+  assert.ok(b.blindSpots.some((t) => /財星少/.test(t)));
+});

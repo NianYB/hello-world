@@ -1,0 +1,16 @@
+小栗的星星 — credits for third-party material
+
+Fonts
+- LXGW WenKai TC (霞鶩文楷 TC), by LXGW — SIL Open Font License 1.1. Subset via Google Fonts (fonts.sh).
+
+Voice
+- Narration: Microsoft Edge neural text-to-speech, voice zh-TW-HsiaoChenNeural, generated with edge-tts (MIT licence, github.com/rany2/edge-tts).
+  The voice is synthetic. Check Microsoft's terms before any commercial use.
+
+Music and sound
+- Original score and all sound effects synthesised in code (numpy; the nylon guitar and music box use the Karplus–Strong /
+  modal models of the Lemo-Opuscar library's core/audio/pluck.py). No samples or recordings.
+
+Picture
+- Drawn entirely in code. The crayon/paper/watercolour engine (gl.js, crayon.js, rig.js) and the foley and voice-processing
+  helpers in mix.py are adapted from the "Crayon Picture Book" style of the Lemo-Opuscar library (github.com/lemomo-ai/lemo-opuscar), Copyright (c) 2026 Lemomo (LemoLab), MIT License.
